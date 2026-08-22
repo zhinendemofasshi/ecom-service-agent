@@ -63,9 +63,28 @@ python main.py
 **跑评估 & 测试**：
 
 ```bash
-python -m app.scripts.run_eval        # 离线评估（沙箱重跑黄金测试集 + LLM judge）
+python -m app.scripts.run_eval --mode multi --variant optimized --no-judge
+python -m app.scripts.run_eval --case-id knowledge_account_stolen --no-judge
+python -m app.scripts.compare_eval    # 真实重跑 baseline/optimized 并生成 JSON + Markdown
+python -m app.scripts.rescore_eval docs/evaluation-results/2026-08-15/optimized.json
+python -m app.scripts.run_rag_eval --no-judge  # 30 条 Recall@1/3/5 + MRR
+python -m app.scripts.run_rag_eval --judge --judge-model gpt-5.6-luna  # + Faithfulness
 pytest                                # 运行全部单元测试
 ```
+
+黄金集已扩展为 50 条，覆盖订单、物流、商品、知识库、退款、投诉和
+通用对话。对比报告同时给出通过率、路由准确率、工具 Precision/Recall/F1、
+输入/输出 token、估算 API 成本、平均/P50/P95 延迟。详细设计和复现口径见
+[`docs/第10期-Agent评估工程化增强.md`](docs/第10期-Agent评估工程化增强.md)，
+2026-08-15 的 50 条真实 A/B 结果见
+[`docs/evaluation-results/2026-08-15/comparison.md`](docs/evaluation-results/2026-08-15/comparison.md)，
+通过率误差归因与质量优化（62% → 96%）见
+[`docs/evaluation-results/2026-08-15/quality-fix-comparison.md`](docs/evaluation-results/2026-08-15/quality-fix-comparison.md)，
+GPT-4o mini 与 GPT-5.6 Luna 的同集模型选型实验见
+[`docs/evaluation-results/2026-08-15/model-comparison.md`](docs/evaluation-results/2026-08-15/model-comparison.md)。
+覆盖全部 19 个知识 Chunk 的 30 条 RAG 专项评估结果（Recall@3/5
+98.3%/100%、MRR 0.95、Faithfulness 100%）见
+[`docs/evaluation-results/2026-08-15/rag-evaluation.md`](docs/evaluation-results/2026-08-15/rag-evaluation.md)。
 
 ---
 
@@ -169,6 +188,7 @@ ecom-service-agent/
 │   │   │   ├── mock_data.py       # Mock 数据：订单、商品、物流
 │   │   │   ├── registry.py        # 本地工具注册表 + OpenAI schema + 分发执行
 │   │   │   ├── manager.py         # ToolManager：统一管理本地 + MCP 工具（支持 allowed_tools 过滤）
+│   │   │   ├── execution.py       # 同轮同参只读工具结果复用，写操作自动失效
 │   │   │   ├── order.py           # 查询订单详情
 │   │   │   ├── product.py         # 搜索商品信息
 │   │   │   ├── logistics.py       # 查询物流轨迹
@@ -199,14 +219,21 @@ ecom-service-agent/
 │   │   ├── sandbox.py             # Sandbox：隔离环境 + 共享 client 插桩 + 采集
 │   │   ├── metrics.py             # 过程/结果双层指标（代码规则 + LLM judge）
 │   │   ├── evaluator.py           # Evaluator：跑用例 → 双层评分 → 聚合报告
-│   │   └── cases.json             # 黄金测试集（~10 条，引用 mock 数据）
+│   │   ├── cases.json             # 50 条分层 Agent 黄金测试集（引用 mock 数据）
+│   │   ├── rag_dataset.py         # RAG 用例结构与标注校验
+│   │   ├── rag_metrics.py         # Recall@K / MRR 确定性指标
+│   │   ├── rag_evaluator.py       # 检索 + 回答完整性 + Faithfulness 聚合
+│   │   └── rag_cases.json         # 30 条 RAG 专项集，覆盖全部 19 个知识 Chunk
 │   ├── multi_agent/               # Multi-Agent 协作（第6期）
 │   │   ├── router.py              # 意图路由器（LLM 分类 → 子 Agent）
 │   │   ├── agents.py              # SubAgent 子 Agent 类 + 配置
 │   │   └── orchestrator.py        # 编排器：路由 → 执行 → 结构化提取（集成 MemoryManager + SkillManager）
 │   ├── scripts/
 │   │   ├── build_kb_index.py      # 离线构建知识库索引（--backend numpy/chroma）
-│   │   └── run_eval.py            # 离线运行评估（--mode single/multi · --judge/--no-judge · --output）
+│   │   ├── run_eval.py            # 单变体评估（baseline/optimized）
+│   │   ├── compare_eval.py        # 前后真实重跑对比 + 可审计报告
+│   │   ├── rescore_eval.py        # 历史 trace 离线重评（不重新调用模型）
+│   │   └── run_rag_eval.py        # RAG Recall@K / MRR / Faithfulness 评估
 │   └── sessions/                  # 运行时生成，已 .gitignore
 │       ├── session.json           # 当前会话快照
 │       ├── kb_index.json          # NumpyBackend 索引
@@ -223,6 +250,7 @@ ecom-service-agent/
     ├── test_react_agent.py        # ReAct Agent + Function Calling
     ├── test_mcp.py                # MCP 集成
     ├── test_rag.py                # RAG 知识库检索
+    ├── test_rag_evaluation.py     # RAG 数据覆盖与指标聚合
     ├── test_multi_agent.py        # Multi-Agent 协作
     ├── test_memory.py             # Memory 短期记忆 & 长期记忆
     ├── test_skills.py             # Skill 可复用能力模块

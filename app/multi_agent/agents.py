@@ -9,6 +9,8 @@ from openai import OpenAI
 
 from app.prompts.agents import COMPLAINT_PROMPT, POSTSALE_PROMPT, PRESALE_PROMPT
 from app.agent.tools.manager import ToolManager
+from app.agent.tools.execution import tool_cache_key
+from app.config.model_compat import chat_completion_options
 
 
 AGENT_CONFIGS = {
@@ -28,7 +30,7 @@ AGENT_CONFIGS = {
     "complaint": {
         "name": "小夕-投诉",
         "prompt": COMPLAINT_PROMPT,
-        "tools": {"query_order", "search_knowledge", "load_skill"},
+        "tools": {"query_order", "search_knowledge"},
     },
 }
 
@@ -58,6 +60,7 @@ class SubAgent:
         """执行 ReAct 循环，返回 (最终文本, 新增消息列表)。"""
         new_messages: list[dict] = []
         working = list(messages)
+        tool_cache: dict[str, str] = {}
 
         for _ in range(max_steps):
             response = self.client.chat.completions.create(
@@ -65,6 +68,7 @@ class SubAgent:
                 messages=working,
                 temperature=self.temperature,
                 tools=self.tool_manager.tool_definitions,
+                **chat_completion_options(self.model),
             )
             assistant_msg = response.choices[0].message
 
@@ -96,8 +100,17 @@ class SubAgent:
                 func_name = tc.function.name
                 func_args = json.loads(tc.function.arguments)
 
-                self._print_action(func_name, func_args)
-                result_str = self.tool_manager.execute_tool(func_name, func_args)
+                cache_key = tool_cache_key(func_name, func_args)
+                if cache_key is not None and cache_key in tool_cache:
+                    self._print_cache_hit(func_name, func_args)
+                    result_str = tool_cache[cache_key]
+                else:
+                    self._print_action(func_name, func_args)
+                    result_str = self.tool_manager.execute_tool(func_name, func_args)
+                    if cache_key is not None:
+                        tool_cache[cache_key] = result_str
+                    else:
+                        tool_cache.clear()
                 self._print_observation(result_str)
 
                 tool_msg = {
@@ -112,6 +125,7 @@ class SubAgent:
             model=self.model,
             messages=working,
             temperature=self.temperature,
+            **chat_completion_options(self.model),
         )
         content = response.choices[0].message.content or ""
         new_messages.append({"role": "assistant", "content": content})
@@ -123,6 +137,10 @@ class SubAgent:
     def _print_action(self, func_name: str, func_args: dict) -> None:
         args_str = ", ".join(f"{k}={v!r}" for k, v in func_args.items())
         print(f"  🔧 [{self.name}·调用工具] {func_name}({args_str})")
+
+    def _print_cache_hit(self, func_name: str, func_args: dict) -> None:
+        args_str = ", ".join(f"{k}={v!r}" for k, v in func_args.items())
+        print(f"  ♻️  [{self.name}·复用结果] {func_name}({args_str})")
 
     def _print_observation(self, result: str) -> None:
         display = result if len(result) <= 300 else result[:300] + "..."

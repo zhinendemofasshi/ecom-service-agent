@@ -51,3 +51,8 @@ class KnowledgeRetriever:
             self.load()
         q_vec = self._embedder.encode_one(query)
         return self._backend.search(q_vec, top_k=top_k)
+
+    def close(self) -> None:
+        close = getattr(self._embedder, "close", None)
+        if close:
+            close()

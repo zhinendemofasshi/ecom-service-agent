@@ -34,6 +34,7 @@ class ToolObservation:
     name: str
     arguments: dict
     result: str  # 工具返回的 JSON 字符串
+    latency_ms: float = 0.0
 
 
 @dataclass
@@ -44,14 +45,32 @@ class RunTrace:
     turns: list[str]
     final_response: Optional["CustomerServiceResponse"] = None
     route: str | None = None  # 多 Agent 模式下实际路由到的子 Agent
+    route_source: str | None = None  # rule / llm，便于验证路由优化
     llm_calls: list[LLMCallRecord] = field(default_factory=list)
     tool_observations: list[ToolObservation] = field(default_factory=list)
+    end_to_end_latency_ms: float = 0.0
     error: str | None = None  # 运行异常信息，None=正常
 
     # ---------- 便捷聚合属性 ----------
     @property
     def total_tokens(self) -> int:
         return sum(c.total_tokens for c in self.llm_calls)
+
+    @property
+    def prompt_tokens(self) -> int:
+        return sum(c.prompt_tokens for c in self.llm_calls)
+
+    @property
+    def completion_tokens(self) -> int:
+        return sum(c.completion_tokens for c in self.llm_calls)
+
+    @property
+    def llm_latency_ms(self) -> float:
+        return sum(c.latency_ms for c in self.llm_calls)
+
+    @property
+    def tool_latency_ms(self) -> float:
+        return sum(obs.latency_ms for obs in self.tool_observations)
 
     @property
     def num_llm_calls(self) -> int:
@@ -73,10 +92,16 @@ class RunTrace:
             "case_id": self.case_id,
             "turns": self.turns,
             "route": self.route,
+            "route_source": self.route_source,
             "reply": resp.reply if resp else None,
             "intent": resp.intent.value if resp else None,
             "requires_human": resp.requires_human if resp else None,
             "total_tokens": self.total_tokens,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "end_to_end_latency_ms": round(self.end_to_end_latency_ms, 3),
+            "llm_latency_ms": round(self.llm_latency_ms, 3),
+            "tool_latency_ms": round(self.tool_latency_ms, 3),
             "num_llm_calls": self.num_llm_calls,
             "num_tool_calls": self.num_tool_calls,
             "tool_calls": self.tool_call_names,

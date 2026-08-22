@@ -3,8 +3,8 @@
 分两层、两类（与 README 的 2×2 对应）：
 
             代码规则                          LLM judge
-过程指标   tool_accuracy / tool_efficiency    judge_process_soundness
-           / token_cost_pass / route_match
+过程指标   tool_precision / tool_recall / F1   judge_process_soundness
+           / tool_efficiency / token_cost / route_match
 结果指标   intent_match / keyword_coverage    judge_answer_quality
            / requires_human_match             / judge_faithfulness
 
@@ -17,6 +17,8 @@ LLM judge 仿照 app/agent/memory/extraction.py 的「格式化 → 调用 LLM �
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
 
 from openai import OpenAI
 
@@ -26,18 +28,63 @@ from app.prompts.evaluation import (
     PROCESS_SOUNDNESS_PROMPT,
 )
 from app.evaluation.trace import ToolObservation
+from app.config.model_compat import chat_completion_options
 
 
 # ============================================================
 # 过程指标（代码规则）
 # ============================================================
 def tool_accuracy(expected: list[str], called: list[str]) -> float | None:
-    """工具调用准确率：期望工具被实际调用的比例。expected 为空返回 None。"""
+    """兼容旧名：实际计算工具召回率（expected 命中比例）。"""
     if not expected:
         return None
     called_set = set(called)
     hit = sum(1 for t in expected if t in called_set)
     return hit / len(expected)
+
+
+def tool_recall(expected: list[str], called: list[str]) -> float | None:
+    """工具召回率：应调工具中有多少被调用。"""
+    return tool_accuracy(expected, called)
+
+
+def tool_precision(
+    expected: list[str], called: list[str], optional: list[str] | None = None,
+) -> float:
+    """工具精确率：实际调用中有多少是必要的。
+
+    Precision 在“工具类型”层计算：重复调用由 tool_efficiency 衡量，不在这里
+    二次扣分。optional 中的工具属于合理分支，调用后不降 precision，但不计 recall。
+    对“不应调工具”用例：零调用得 1，任意多余调用得 0。
+    """
+    if not called:
+        return 1.0 if not expected else 0.0
+    allowed_set = set(expected).union(optional or [])
+    called_set = set(called)
+    unique_hits = len(allowed_set.intersection(called_set))
+    return unique_hits / len(called_set)
+
+
+def tool_f1(precision: float, recall: float | None) -> float | None:
+    """工具 precision/recall 的调和平均。"""
+    if recall is None:
+        return None
+    if precision + recall == 0:
+        return 0.0
+    return 2 * precision * recall / (precision + recall)
+
+
+def estimated_cost_usd(
+    prompt_tokens: int,
+    completion_tokens: int,
+    input_cost_per_million: float,
+    output_cost_per_million: float,
+) -> float:
+    """按输入/输出 token 单价估算 Agent 调用成本（USD）。"""
+    return (
+        prompt_tokens * input_cost_per_million
+        + completion_tokens * output_cost_per_million
+    ) / 1_000_000
 
 
 def tool_efficiency(min_calls: int | None, actual: int) -> float | None:
@@ -70,18 +117,36 @@ def route_match(expected: str | None, actual: str | None) -> float | None:
 # ============================================================
 # 结果指标（代码规则）
 # ============================================================
-def intent_match(expected: str | None, actual: str) -> float | None:
-    """意图识别是否命中。expected 为 None 返回 None。"""
+def intent_match(expected: str | list[str] | None, actual: str) -> float | None:
+    """意图识别是否命中。混合诉求可接受一组等价意图。"""
     if expected is None:
         return None
-    return 1.0 if expected == actual else 0.0
+    alternatives = expected if isinstance(expected, list) else [expected]
+    return 1.0 if actual in alternatives else 0.0
 
 
-def keyword_coverage(expected: list[str], reply: str) -> float | None:
-    """关键信息完整性：期望关键词在 reply 中出现的比例。expected 为空返回 None。"""
+def _normalize_match_text(text: str) -> str:
+    """做轻量格式归一化，不进行语义猜测或模糊扩写。"""
+    normalized = unicodedata.normalize("NFKC", text).casefold()
+    return re.sub(r"[^0-9a-z\u4e00-\u9fff]+", "", normalized)
+
+
+def keyword_coverage(
+    expected: list[str | list[str]], reply: str,
+) -> float | None:
+    """关键事实覆盖率。
+
+    空格、Markdown、全半角和大小写不应造成误判；每个 list 表示一组人工标注的
+    等价说法，命中组内任意一项即算该事实命中。不会自动做语义相似度猜测。
+    """
     if not expected:
         return None
-    hit = sum(1 for kw in expected if kw in reply)
+    normalized_reply = _normalize_match_text(reply)
+    hit = 0
+    for item in expected:
+        alternatives = item if isinstance(item, list) else [item]
+        if any(_normalize_match_text(alt) in normalized_reply for alt in alternatives):
+            hit += 1
     return hit / len(expected)
 
 
@@ -122,6 +187,7 @@ def judge_answer_quality(
             model=model,
             temperature=0.0,
             messages=[{"role": "user", "content": prompt}],
+            **chat_completion_options(model),
         )
         data = _parse_json(response.choices[0].message.content or "")
         return float(data["score"]), data.get("reason", "")
@@ -151,6 +217,7 @@ def judge_faithfulness(
             model=model,
             temperature=0.0,
             messages=[{"role": "user", "content": prompt}],
+            **chat_completion_options(model),
         )
         data = _parse_json(response.choices[0].message.content or "")
         faithful = bool(data["faithful"])
@@ -181,6 +248,7 @@ def judge_process_soundness(
             model=model,
             temperature=0.0,
             messages=[{"role": "user", "content": prompt}],
+            **chat_completion_options(model),
         )
         data = _parse_json(response.choices[0].message.content or "")
         return float(data["score"]), data.get("reason", "")

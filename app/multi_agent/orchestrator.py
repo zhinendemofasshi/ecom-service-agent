@@ -10,6 +10,8 @@ from openai import OpenAI
 from app.agent.storage import delete_session, load_session, save_session
 from app.agent.summarizer import summarize
 from app.config.settings import settings
+from app.config.model_compat import chat_completion_options
+from app.prompts.customer_service import STRUCTURED_EXTRACTION_PROMPT
 from app.multi_agent.agents import AGENT_CONFIGS, SubAgent
 from app.multi_agent.router import Router
 from app.schemas.response import CustomerServiceResponse, IntentType
@@ -19,24 +21,43 @@ from app.agent.tools.manager import ToolManager
 class MultiAgentOrchestrator:
     """多 Agent 编排器，对外接口与 EcomAgent 一致。"""
 
-    def __init__(self, session_path: Optional[str] = None):
-        self.client = OpenAI(
+    def __init__(
+        self,
+        session_path: Optional[str] = None,
+        *,
+        client: Optional[OpenAI] = None,
+        memory_enabled: Optional[bool] = None,
+        mcp_enabled: Optional[bool] = None,
+        skills_enabled: Optional[bool] = None,
+        router_strategy: str = "llm",
+        temperature: Optional[float] = None,
+    ):
+        """Create the orchestrator with optional sandbox-safe overrides."""
+        self.client = client or OpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
         )
         self.model = settings.model_name
-        self.temperature = settings.temperature
+        self.temperature = settings.temperature if temperature is None else temperature
         self.session_path = session_path or settings.session_path
         self.history_threshold = settings.history_threshold
         self.history_keep_recent = settings.history_keep_recent
         self.max_react_steps = settings.max_react_steps
 
-        self.router = Router(self.client, self.model)
+        self.router = Router(self.client, self.model, strategy=router_strategy)
+
+        effective_mcp_enabled = settings.mcp_enabled if mcp_enabled is None else mcp_enabled
+        effective_memory_enabled = (
+            settings.memory_enabled if memory_enabled is None else memory_enabled
+        )
+        effective_skills_enabled = (
+            settings.skills_enabled if skills_enabled is None else skills_enabled
+        )
 
         self.agents: dict[str, SubAgent] = {}
         for key, cfg in AGENT_CONFIGS.items():
             tm = ToolManager(
-                use_mcp=settings.mcp_enabled,
+                use_mcp=effective_mcp_enabled,
                 mcp_server_url=settings.mcp_server_url,
                 allowed_tools=cfg["tools"],
             )
@@ -55,20 +76,20 @@ class MultiAgentOrchestrator:
             model=self.model,
             user_id=settings.memory_user_id,
             memory_dir=settings.memory_dir,
-            memory_enabled=settings.memory_enabled,
+            memory_enabled=effective_memory_enabled,
             max_ltm_facts=settings.max_ltm_facts,
         )
 
-        if settings.memory_enabled:
+        if effective_memory_enabled:
             from app.agent.tools.memory_tool import set_memory_manager
             set_memory_manager(self.memory_manager)
 
         from app.agent.skills import SkillManager
         self.skill_manager = SkillManager(
             skills_dir=settings.skills_dir,
-            enabled=settings.skills_enabled,
+            enabled=effective_skills_enabled,
         )
-        if settings.skills_enabled:
+        if effective_skills_enabled:
             from app.agent.tools.skill_tool import set_skill_manager
             set_skill_manager(self.skill_manager)
 
@@ -159,15 +180,13 @@ class MultiAgentOrchestrator:
                 messages=[
                     {
                         "role": "system",
-                        "content": (
-                            "基于以下客服回复内容，提取结构化信息。"
-                            "reply 字段直接使用原文，不要修改或缩减。"
-                        ),
+                        "content": STRUCTURED_EXTRACTION_PROMPT,
                     },
                     {"role": "user", "content": text},
                 ],
                 temperature=0.0,
                 response_format=CustomerServiceResponse,
+                **chat_completion_options(self.model),
             )
             return response.choices[0].message.parsed
         except Exception:
@@ -182,8 +201,7 @@ class MultiAgentOrchestrator:
                 {
                     "role": "system",
                     "content": (
-                        "基于以下客服回复内容，提取结构化信息并输出 JSON。\n"
-                        "reply 字段直接使用原文，不要修改或缩减。\n\n"
+                        f"{STRUCTURED_EXTRACTION_PROMPT}\n\n输出 JSON。\n\n"
                         "必须严格按照以下 JSON 格式输出（不要加 markdown 代码块）：\n"
                         "{\n"
                         f'  "intent": <从以下选择: {intent_values}>,\n'
@@ -197,6 +215,7 @@ class MultiAgentOrchestrator:
                 {"role": "user", "content": text},
             ],
             temperature=0.0,
+            **chat_completion_options(self.model),
         )
         raw = response.choices[0].message.content.strip()
         if raw.startswith("```"):

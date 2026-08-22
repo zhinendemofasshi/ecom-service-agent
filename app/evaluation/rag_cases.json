@@ -1,0 +1,214 @@
+{
+  "cases": [
+    {
+      "id": "member_level_thresholds",
+      "category": "member",
+      "query": "白银、黄金和钻石会员分别要累计消费多少钱，维持等级又要多少？",
+      "relevant_chunk_ids": ["会员权益#01-00"],
+      "expected_keywords": ["1,000", "5,000", "20,000", "15,000"]
+    },
+    {
+      "id": "member_diamond_benefits",
+      "category": "member",
+      "query": "钻石会员有哪些核心权益，偏远地区包邮吗？",
+      "relevant_chunk_ids": ["会员权益#02-00"],
+      "expected_keywords": ["全场包邮", "24小时", "4次", "1V1"]
+    },
+    {
+      "id": "member_points_rules",
+      "category": "member",
+      "query": "积分多久过期，多少积分抵一块钱，一单最多抵多少？",
+      "relevant_chunk_ids": ["会员权益#03-00"],
+      "expected_keywords": ["24个月", "100积分", "50%"]
+    },
+    {
+      "id": "member_birthday_benefits",
+      "category": "member",
+      "query": "会员生日当月、当周和当天分别有什么福利？",
+      "relevant_chunk_ids": ["会员权益#04-00"],
+      "expected_keywords": ["双倍积分", "生日礼盒", "88元"]
+    },
+    {
+      "id": "member_upgrade_and_fee",
+      "category": "member",
+      "query": "会员能手动升级吗，要不要年费，升级门槛怎么计算？",
+      "relevant_chunk_ids": ["会员权益#05-00", "会员权益#01-00"],
+      "expected_keywords": ["不可以", "免费", "近12个月"]
+    },
+    {
+      "id": "faq_shipping_after_order",
+      "category": "faq",
+      "query": "普通现货下单多久发货，超过多久没发可以申请退款？",
+      "relevant_chunk_ids": ["常见问题FAQ#01-00"],
+      "expected_keywords": ["48小时", "72小时", "未发货退款"]
+    },
+    {
+      "id": "faq_payment_methods",
+      "category": "faq",
+      "query": "平台支持哪些支付方式，能货到付款或者刷境外信用卡吗？",
+      "relevant_chunk_ids": ["常见问题FAQ#01-00"],
+      "expected_keywords": ["微信支付", "Apple Pay", "不支持货到付款", "境外信用卡"]
+    },
+    {
+      "id": "faq_modify_order",
+      "category": "faq",
+      "query": "订单下错地址和商品规格了，发货前后分别能怎么修改？",
+      "relevant_chunk_ids": ["常见问题FAQ#01-00"],
+      "expected_keywords": ["24小时", "取消重下", "联系快递员"]
+    },
+    {
+      "id": "faq_payment_not_synced",
+      "category": "faq",
+      "query": "钱已经付了但平台还显示未支付，等多久后需要联系客服？",
+      "relevant_chunk_ids": ["常见问题FAQ#01-00"],
+      "expected_keywords": ["5分钟", "30分钟", "支付凭证"]
+    },
+    {
+      "id": "faq_price_protection",
+      "category": "faq",
+      "query": "商品签收后降价可以退差价吗，普通会员和钻石会员价保多久？",
+      "relevant_chunk_ids": ["常见问题FAQ#02-00"],
+      "expected_keywords": ["7天", "15天", "同一店铺"]
+    },
+    {
+      "id": "faq_out_of_stock",
+      "category": "faq",
+      "query": "商品页面显示缺货，怎样才能知道补货了？",
+      "relevant_chunk_ids": ["常见问题FAQ#02-00"],
+      "expected_keywords": ["到货提醒", "短信", "站内信"]
+    },
+    {
+      "id": "faq_counterfeit",
+      "category": "faq",
+      "query": "怀疑买到假货要保留什么并从哪里申请，确认是假货怎么赔？",
+      "relevant_chunk_ids": ["常见问题FAQ#02-00"],
+      "expected_keywords": ["真假鉴别", "3倍", "500元"]
+    },
+    {
+      "id": "faq_return_shipment_lost",
+      "category": "faq",
+      "query": "退货寄回途中快递把商品弄丢了，应该找谁，退款怎么办？",
+      "relevant_chunk_ids": ["常见问题FAQ#03-00"],
+      "expected_keywords": ["快递公司", "丢件证明", "无需顾客承担"]
+    },
+    {
+      "id": "faq_refund_arrival",
+      "category": "faq",
+      "query": "退款审核和质检完成后，款项退回哪里，银行卡和微信分别多久到账？",
+      "relevant_chunk_ids": ["常见问题FAQ#03-00", "退换货政策#03-00"],
+      "expected_keywords": ["原路退回", "1-3", "3-7"]
+    },
+    {
+      "id": "faq_warranty",
+      "category": "faq",
+      "query": "家电保修期内出现非人为故障，应该走什么维修流程，要寄回平台仓库吗？",
+      "relevant_chunk_ids": ["常见问题FAQ#03-00"],
+      "expected_keywords": ["品牌方", "品牌维修", "无需邮寄"]
+    },
+    {
+      "id": "faq_forgot_password",
+      "category": "faq",
+      "query": "忘记登录密码怎么重置，如果注册手机号停用了怎么办？",
+      "relevant_chunk_ids": ["常见问题FAQ#04-00"],
+      "expected_keywords": ["验证码", "身份证照片", "5个工作日"]
+    },
+    {
+      "id": "faq_account_stolen",
+      "category": "faq",
+      "query": "账户疑似被盗而且出现了陌生交易，现在立刻要做什么？",
+      "relevant_chunk_ids": ["常见问题FAQ#04-00"],
+      "expected_keywords": ["修改密码", "解绑支付方式", "冻结账户", "报警回执"]
+    },
+    {
+      "id": "faq_cancel_account",
+      "category": "faq",
+      "query": "如何注销账户，注销前要处理什么，之后还能恢复吗？",
+      "relevant_chunk_ids": ["常见问题FAQ#04-00"],
+      "expected_keywords": ["注销账户", "未完成订单", "30天"]
+    },
+    {
+      "id": "return_seven_day_conditions",
+      "category": "return",
+      "query": "七天无理由退货从哪天开始算，商品需要保持什么状态？",
+      "relevant_chunk_ids": ["退换货政策#01-00"],
+      "expected_keywords": ["签收", "7天", "二次销售"]
+    },
+    {
+      "id": "return_seven_day_exclusions",
+      "category": "return",
+      "query": "哪些商品不能七天无理由退货？定制、生鲜和电子卡券可以吗？",
+      "relevant_chunk_ids": ["退换货政策#01-00"],
+      "expected_keywords": ["个人定制", "鲜活易腐", "数字化商品"]
+    },
+    {
+      "id": "return_no_reason_shipping_fee",
+      "category": "return",
+      "query": "七天无理由退货的运费谁承担，上门取件多少钱起？",
+      "relevant_chunk_ids": ["退换货政策#01-00"],
+      "expected_keywords": ["顾客承担", "12元", "退款金额中扣除"]
+    },
+    {
+      "id": "return_quality_policy",
+      "category": "return",
+      "query": "商品质量有问题，多少天内能退，运费谁出，质检后多久退款？",
+      "relevant_chunk_ids": ["退换货政策#02-00"],
+      "expected_keywords": ["15天", "并夕夕承担", "1-3个工作日"]
+    },
+    {
+      "id": "return_quality_evidence",
+      "category": "return",
+      "query": "申请质量问题退换货需要拍哪些照片或视频？",
+      "relevant_chunk_ids": ["退换货政策#02-00"],
+      "expected_keywords": ["外观照片", "包装外观照片", "故障演示视频"]
+    },
+    {
+      "id": "return_refund_process",
+      "category": "return",
+      "query": "提交退款申请后经过哪些步骤，普通商品和敏感商品多久审核？",
+      "relevant_chunk_ids": ["退换货政策#03-00"],
+      "expected_keywords": ["24小时", "48小时", "寄回商品", "质检"]
+    },
+    {
+      "id": "return_special_scenarios",
+      "category": "return",
+      "query": "哪些情况可以仅退款，拒收后多久退款，多件商品能只退一件吗？",
+      "relevant_chunk_ids": ["退换货政策#04-00"],
+      "expected_keywords": ["未发货", "5-7个工作日", "部分退款"]
+    },
+    {
+      "id": "shipping_coverage",
+      "category": "shipping",
+      "query": "平台配送覆盖哪些地区，偏远地区会多等多久，港澳台怎么买？",
+      "relevant_chunk_ids": ["配送说明#01-00"],
+      "expected_keywords": ["31个", "1-3个工作日", "并夕夕国际"]
+    },
+    {
+      "id": "shipping_delivery_time",
+      "category": "shipping",
+      "query": "一线城市和县级地区普通快递分别多久，时效从什么时候开始算？",
+      "relevant_chunk_ids": ["配送说明#02-00"],
+      "expected_keywords": ["2-3天", "4-7天", "商家发货"]
+    },
+    {
+      "id": "shipping_fee_rules",
+      "category": "shipping",
+      "query": "订单满多少钱包邮，不满收多少，偏远地区和钻石会员怎么收费？",
+      "relevant_chunk_ids": ["配送说明#03-00"],
+      "expected_keywords": ["99元", "8元", "20元", "钻石会员"]
+    },
+    {
+      "id": "shipping_carriers",
+      "category": "shipping",
+      "query": "平台合作哪些快递，下单时可以自己指定顺丰吗？",
+      "relevant_chunk_ids": ["配送说明#04-00"],
+      "expected_keywords": ["顺丰速运", "京东物流", "不支持顾客指定"]
+    },
+    {
+      "id": "shipping_receipt_and_stall",
+      "category": "shipping",
+      "query": "签收后发现外观破损，而且物流此前超过三天没更新，分别应该怎么办？",
+      "relevant_chunk_ids": ["配送说明#05-00", "配送说明#06-00"],
+      "expected_keywords": ["24小时", "3天", "物流催单"]
+    }
+  ]
+}

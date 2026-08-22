@@ -55,10 +55,12 @@ def _get_retriever() -> KnowledgeRetriever:
 def reset_retriever() -> None:
     """清空单例缓存（测试或切换后端时使用）。"""
     global _retriever
+    if _retriever is not None:
+        _retriever.close()
     _retriever = None
 
 
-def search_knowledge(query: str, top_k: int = 3) -> dict:
+def search_knowledge(query: str, top_k: int = 5) -> dict:
     """检索退换货政策、配送说明、会员权益、FAQ 等知识库内容。
 
     Returns:
@@ -95,7 +97,7 @@ def search_knowledge(query: str, top_k: int = 3) -> dict:
             "results": [],
         }
 
-    top_k = max(1, min(int(top_k or 3), 5))
+    top_k = max(1, min(int(top_k or 5), 5))
     hits = retriever.search(query, top_k=top_k)
 
     return {

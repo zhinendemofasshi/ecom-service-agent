@@ -62,7 +62,7 @@ TOOL_DEFINITIONS: list[dict] = [
         "type": "function",
         "function": {
             "name": "query_logistics",
-            "description": "根据订单号查询物流轨迹信息，包括快递公司、运单号、运输状态和轨迹事件",
+            "description": "仅用于用户明确询问快递、运单、配送位置或物流轨迹；根据订单号返回物流信息及未发货/不存在错误",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -80,9 +80,10 @@ TOOL_DEFINITIONS: list[dict] = [
         "function": {
             "name": "search_knowledge",
             "description": (
-                "检索并夕夕的政策与帮助文档（退换货政策、配送说明、会员权益、常见问题 FAQ）。"
+                "检索并夕夕的政策与帮助文档（退换货、配送、会员积分、退款渠道时效、账户安全和密码找回 FAQ）。"
                 "当顾客询问规则、流程、时效、是否支持等政策类问题时使用，"
                 "比如「能退货吗」「多久到账」「钻石会员有什么权益」「偏远地区包邮吗」。"
+                "已有具体订单号的当前订单/退款进度应使用 query_order，不使用本工具。"
                 "返回 Top-K 命中片段及来源文档，请基于检索结果回答，不要编造政策"
             ),
             "parameters": {
@@ -94,8 +95,8 @@ TOOL_DEFINITIONS: list[dict] = [
                     },
                     "top_k": {
                         "type": "integer",
-                        "description": "返回片段数，默认 3，最大 5",
-                        "default": 3,
+                        "description": "返回片段数，默认 5，最大 5",
+                        "default": 5,
                     },
                 },
                 "required": ["query"],
@@ -122,7 +123,10 @@ TOOL_DEFINITIONS: list[dict] = [
         "type": "function",
         "function": {
             "name": "apply_refund",
-            "description": "为指定订单申请退款。注意：这是一个敏感操作，调用前应先与用户确认",
+            "description": (
+                "为指定订单申请退款。这是敏感写操作：必须已在此前轮次查询并复述订单，"
+                "且用户在新的消息中明确确认订单号和退款原因；首次提出退款的同一轮禁止调用"
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -165,9 +169,8 @@ TOOL_DEFINITIONS: list[dict] = [
         "function": {
             "name": "load_skill",
             "description": (
-                "加载指定技能的完整操作指令。"
-                "当用户问题匹配某个可用技能时，调用此工具获取该技能的详细处理流程，"
-                "然后按流程指引使用已有工具完成用户请求。"
+                "仅为复杂、多步骤且现有系统规则不足的任务加载一份操作指令。"
+                "简单订单、物流、商品、FAQ 查询不要调用；同一会话不要重复加载。"
                 "可用技能会在系统提示中列出。"
             ),
             "parameters": {

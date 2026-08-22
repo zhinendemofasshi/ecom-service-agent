@@ -6,28 +6,53 @@ from openai import OpenAI
 from app.agent.storage import delete_session, load_session, save_session
 from app.agent.summarizer import summarize
 from app.config.settings import settings
-from app.prompts.customer_service import SYSTEM_PROMPT
+from app.config.model_compat import chat_completion_options
+from app.prompts.customer_service import SYSTEM_PROMPT, STRUCTURED_EXTRACTION_PROMPT
 from app.schemas.response import CustomerServiceResponse, IntentType
 from app.agent.tools.manager import ToolManager
+from app.agent.tools.execution import tool_cache_key
 
 
 class EcomAgent:
     """电商客服 Agent —— 第八期：Skill 可复用能力模块"""
 
-    def __init__(self, session_path: Optional[str] = None):
-        self.client = OpenAI(
+    def __init__(
+        self,
+        session_path: Optional[str] = None,
+        *,
+        client: Optional[OpenAI] = None,
+        memory_enabled: Optional[bool] = None,
+        mcp_enabled: Optional[bool] = None,
+        skills_enabled: Optional[bool] = None,
+        temperature: Optional[float] = None,
+    ):
+        """Create the agent.
+
+        Optional dependency/configuration overrides are primarily used by the
+        evaluation sandbox.  They avoid mutating the process-wide ``settings``
+        singleton while an isolated case is being constructed.
+        """
+        self.client = client or OpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
         )
         self.model = settings.model_name
-        self.temperature = settings.temperature
+        self.temperature = settings.temperature if temperature is None else temperature
         self.session_path = session_path or settings.session_path
         self.history_threshold = settings.history_threshold
         self.history_keep_recent = settings.history_keep_recent
         self.max_react_steps = settings.max_react_steps
 
+        effective_mcp_enabled = settings.mcp_enabled if mcp_enabled is None else mcp_enabled
+        effective_memory_enabled = (
+            settings.memory_enabled if memory_enabled is None else memory_enabled
+        )
+        effective_skills_enabled = (
+            settings.skills_enabled if skills_enabled is None else skills_enabled
+        )
+
         self.tool_manager = ToolManager(
-            use_mcp=settings.mcp_enabled,
+            use_mcp=effective_mcp_enabled,
             mcp_server_url=settings.mcp_server_url,
         )
 
@@ -37,20 +62,20 @@ class EcomAgent:
             model=self.model,
             user_id=settings.memory_user_id,
             memory_dir=settings.memory_dir,
-            memory_enabled=settings.memory_enabled,
+            memory_enabled=effective_memory_enabled,
             max_ltm_facts=settings.max_ltm_facts,
         )
 
-        if settings.memory_enabled:
+        if effective_memory_enabled:
             from app.agent.tools.memory_tool import set_memory_manager
             set_memory_manager(self.memory_manager)
 
         from app.agent.skills import SkillManager
         self.skill_manager = SkillManager(
             skills_dir=settings.skills_dir,
-            enabled=settings.skills_enabled,
+            enabled=effective_skills_enabled,
         )
-        if settings.skills_enabled:
+        if effective_skills_enabled:
             from app.agent.tools.skill_tool import set_skill_manager
             set_skill_manager(self.skill_manager)
 
@@ -109,6 +134,7 @@ class EcomAgent:
 
     def _react_loop(self) -> str:
         """ReAct 循环：调用 LLM → 执行工具 → 观察结果 → 重复，直到模型给出最终回答。"""
+        tool_cache: dict[str, str] = {}
         for step in range(self.max_react_steps):
             messages = self._build_messages()
 
@@ -117,6 +143,7 @@ class EcomAgent:
                 messages=messages,
                 temperature=self.temperature,
                 tools=self.tool_manager.tool_definitions,
+                **chat_completion_options(self.model),
             )
             choice = response.choices[0]
             assistant_msg = choice.message
@@ -147,8 +174,17 @@ class EcomAgent:
                 func_name = tc.function.name
                 func_args = json.loads(tc.function.arguments)
 
-                self._print_action(func_name, func_args)
-                result_str = self.tool_manager.execute_tool(func_name, func_args)
+                cache_key = tool_cache_key(func_name, func_args)
+                if cache_key is not None and cache_key in tool_cache:
+                    self._print_cache_hit(func_name, func_args)
+                    result_str = tool_cache[cache_key]
+                else:
+                    self._print_action(func_name, func_args)
+                    result_str = self.tool_manager.execute_tool(func_name, func_args)
+                    if cache_key is not None:
+                        tool_cache[cache_key] = result_str
+                    else:
+                        tool_cache.clear()
                 self._print_observation(result_str)
 
                 self.raw_messages.append({
@@ -162,6 +198,7 @@ class EcomAgent:
             model=self.model,
             messages=messages,
             temperature=self.temperature,
+            **chat_completion_options(self.model),
         )
         content = response.choices[0].message.content or ""
         self.raw_messages.append({"role": "assistant", "content": content})
@@ -175,15 +212,13 @@ class EcomAgent:
                 messages=[
                     {
                         "role": "system",
-                        "content": (
-                            "基于以下客服回复内容，提取结构化信息。"
-                            "reply 字段直接使用原文，不要修改或缩减。"
-                        ),
+                        "content": STRUCTURED_EXTRACTION_PROMPT,
                     },
                     {"role": "user", "content": text},
                 ],
                 temperature=0.0,
                 response_format=CustomerServiceResponse,
+                **chat_completion_options(self.model),
             )
             return response.choices[0].message.parsed
         except Exception:
@@ -198,8 +233,7 @@ class EcomAgent:
                 {
                     "role": "system",
                     "content": (
-                        "基于以下客服回复内容，提取结构化信息并输出 JSON。\n"
-                        "reply 字段直接使用原文，不要修改或缩减。\n\n"
+                        f"{STRUCTURED_EXTRACTION_PROMPT}\n\n输出 JSON。\n\n"
                         "必须严格按照以下 JSON 格式输出（不要加 markdown 代码块）：\n"
                         "{\n"
                         f'  "intent": <从以下选择: {intent_values}>,\n'
@@ -213,6 +247,7 @@ class EcomAgent:
                 {"role": "user", "content": text},
             ],
             temperature=0.0,
+            **chat_completion_options(self.model),
         )
         raw = response.choices[0].message.content.strip()
         if raw.startswith("```"):
@@ -267,6 +302,10 @@ class EcomAgent:
     def _print_action(self, func_name: str, func_args: dict) -> None:
         args_str = ", ".join(f"{k}={v!r}" for k, v in func_args.items())
         print(f"🔧 [调用工具] {func_name}({args_str})")
+
+    def _print_cache_hit(self, func_name: str, func_args: dict) -> None:
+        args_str = ", ".join(f"{k}={v!r}" for k, v in func_args.items())
+        print(f"♻️  [复用结果] {func_name}({args_str})")
 
     def _print_observation(self, result: str) -> None:
         display = result if len(result) <= 300 else result[:300] + "..."

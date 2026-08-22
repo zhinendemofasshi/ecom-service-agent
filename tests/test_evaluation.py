@@ -3,10 +3,12 @@
 测试场景：
 1. 数据集加载 — load_dataset 解析 cases.json，字段完整
 2. 规则指标 — tool_accuracy/efficiency/keyword/intent 等纯函数返回精确值
-3. 沙箱采集 — 跑一条订单用例，RunTrace 应采集到 token、LLM 调用、工具轨迹
-4. 沙箱隔离 — 不同用例 session 路径独立，且记忆被关闭（不污染评分）
-5. LLM judge — 好回复质量≥3、忠实回复无幻觉、编造回复判幻觉
-6. Evaluator 双层 — 同时产出过程得分与结果得分；--no-judge 时 judge 维度为 None
+3. 优化路由 — 高置信规则覆盖 50/50 黄金标注
+4. 可观测聚合 — 确定性 trace 验证工具 P/R/F1、延迟和成本
+5. 沙箱采集 — 跑一条订单用例，RunTrace 应采集到 token、LLM 调用、工具轨迹
+6. 沙箱隔离 — 不同用例 session 路径独立，且不污染全局配置
+7. LLM judge — 好回复质量≥3、忠实回复无幻觉、编造回复判幻觉
+8. Evaluator 双层 — 同时产出过程得分与结果得分；--no-judge 时 judge 维度为 None
 
 用法：python3 tests/test_evaluation.py
 """
@@ -20,11 +22,14 @@ sys.path.insert(0, str(ROOT))
 from openai import OpenAI  # noqa: E402
 
 from app.config.settings import settings  # noqa: E402
+from app.config.model_compat import chat_completion_options  # noqa: E402
 from app.evaluation import metrics  # noqa: E402
 from app.evaluation.dataset import EvalCase, load_dataset  # noqa: E402
 from app.evaluation.evaluator import Evaluator  # noqa: E402
 from app.evaluation.sandbox import Sandbox  # noqa: E402
-from app.evaluation.trace import ToolObservation  # noqa: E402
+from app.evaluation.trace import LLMCallRecord, RunTrace, ToolObservation  # noqa: E402
+from app.multi_agent.router import Router  # noqa: E402
+from app.schemas.response import CustomerServiceResponse, IntentType  # noqa: E402
 
 DATASET = ROOT / "app" / "evaluation" / "cases.json"
 
@@ -44,12 +49,19 @@ def _client() -> OpenAI:
 
 # ---------- 测试 1：数据集加载 ----------
 def test_dataset_load():
-    print("\n[1/6] 数据集加载测试（无需 API）")
+    print("\n[1/8] 数据集加载测试（无需 API）")
     cases = load_dataset(DATASET)
-    if len(cases) >= 8:
+    if len(cases) == 50:
         _ok(f"加载 {len(cases)} 条用例")
     else:
-        _fail(f"预期至少 8 条用例，实际 {len(cases)}")
+        _fail(f"预期恰好 50 条用例，实际 {len(cases)}")
+
+    categories = {case.category for case in cases}
+    expected_categories = {"order", "logistics", "product", "knowledge", "refund", "complaint", "general"}
+    if categories == expected_categories:
+        _ok(f"场景分层完整: {', '.join(sorted(categories))}")
+    else:
+        _fail(f"场景分层不完整: {categories}")
 
     first = cases[0]
     if isinstance(first, EvalCase) and first.id and first.turns:
@@ -67,7 +79,10 @@ def test_dataset_load():
 
 # ---------- 测试 2：规则指标 ----------
 def test_metrics_rule_based():
-    print("\n[2/6] 规则指标测试（无需 API）")
+    print("\n[2/8] 规则指标测试（无需 API）")
+
+    assert chat_completion_options("gpt-5.6-luna") == {"reasoning_effort": "none"}
+    assert chat_completion_options("gpt-4o-mini") == {}
 
     if metrics.tool_accuracy(["query_order"], ["query_order", "load_skill"]) == 1.0:
         _ok("tool_accuracy 全命中 = 1.0")
@@ -84,6 +99,34 @@ def test_metrics_rule_based():
     else:
         _fail("tool_accuracy 空期望应返回 None")
 
+    if metrics.tool_precision(["query_order"], ["query_order", "load_skill"]) == 0.5:
+        _ok("tool_precision 能惩罚多余工具 = 0.5")
+    else:
+        _fail("tool_precision 多余调用计算错误")
+
+    if metrics.tool_precision(
+        ["query_order"], ["query_order", "list_user_orders"], ["list_user_orders"]
+    ) == 1.0:
+        _ok("tool_precision 接受标注的可选工具")
+    else:
+        _fail("tool_precision 可选工具计算错误")
+
+    if metrics.tool_precision(["search_knowledge"], ["search_knowledge"] * 2) == 1.0:
+        _ok("重复调用由 efficiency 衡量，不重复扣 precision")
+    else:
+        _fail("tool_precision 不应对同一工具类型重复扣分")
+
+    if metrics.tool_precision([], []) == 1.0 and metrics.tool_precision([], ["load_skill"]) == 0.0:
+        _ok("无工具用例的 precision 计算正确")
+    else:
+        _fail("无工具用例的 precision 计算错误")
+
+    cost = metrics.estimated_cost_usd(1_000_000, 1_000_000, 0.15, 0.60)
+    if cost == 0.75:
+        _ok("输入/输出 token 成本计算正确")
+    else:
+        _fail(f"成本计算错误: {cost}")
+
     if metrics.tool_efficiency(1, 2) == 0.5 and metrics.tool_efficiency(2, 2) == 1.0:
         _ok("tool_efficiency 计算正确（1/2=0.5, 2/2=1.0）")
     else:
@@ -99,11 +142,23 @@ def test_metrics_rule_based():
     else:
         _fail("keyword_coverage 计算错误")
 
+    if metrics.keyword_coverage(
+        [["16GB+512GB", "16+512"], ["骁龙8 Gen3"]],
+        "配置为 16GB + 512GB，搭载骁龙 8 Gen3",
+    ) == 1.0:
+        _ok("keyword_coverage 支持格式归一化和人工等价词组")
+    else:
+        _fail("keyword_coverage 归一化/等价词组计算错误")
+
     if metrics.intent_match("order_query", "order_query") == 1.0 and \
             metrics.intent_match("order_query", "complaint") == 0.0:
         _ok("intent_match 判断正确")
     else:
         _fail("intent_match 判断错误")
+
+    assert metrics.intent_match(
+        ["order_query", "return_request"], "return_request"
+    ) == 1.0
 
     if metrics.requires_human_match(None, True) is None:
         _ok("requires_human_match 无期望返回 None")
@@ -111,9 +166,95 @@ def test_metrics_rule_based():
         _fail("requires_human_match 空期望应返回 None")
 
 
+def test_optimized_router_covers_dataset():
+    """优化路由的高置信规则应覆盖全部黄金集末轮。"""
+    print("\n[3/8] 优化路由覆盖测试（无需 API）")
+    cases = load_dataset(DATASET)
+    mismatches = []
+    for case in cases:
+        actual = Router._route_by_rule(case.turns[-1])
+        if actual != case.expected_route:
+            mismatches.append((case.id, case.expected_route, actual))
+    if not mismatches:
+        _ok("优化路由规则覆盖 50/50 黄金用例")
+    else:
+        _fail(f"优化路由与黄金标注不一致: {mismatches}")
+
+
+def test_evaluator_observability_aggregation():
+    """用确定性 trace 验证延迟、成本和工具 P/R/F1 聚合，无需 API。"""
+    print("\n[4/8] 可观测指标聚合测试（无需 API）")
+    class FakeSandbox:
+        mode = "multi"
+        variant = "optimized"
+
+        @staticmethod
+        def run(case):
+            trace = RunTrace(case_id=case.id, turns=case.turns)
+            trace.route = "postsale"
+            trace.route_source = "rule"
+            trace.end_to_end_latency_ms = 120.0
+            trace.final_response = CustomerServiceResponse(
+                intent=IntentType.ORDER_QUERY,
+                confidence=1.0,
+                reply="Nike 订单已发货",
+                requires_human=False,
+            )
+            trace.llm_calls.append(LLMCallRecord(
+                purpose="react",
+                model="fake-model",
+                prompt_tokens=100,
+                completion_tokens=50,
+                total_tokens=150,
+                latency_ms=90.0,
+            ))
+            trace.tool_observations.extend([
+                ToolObservation("query_order", {"order_id": "x"}, "{}", latency_ms=5.0),
+                ToolObservation("load_skill", {"skill_name": "x"}, "{}", latency_ms=1.0),
+            ])
+            return trace
+
+    case = EvalCase(
+        id="aggregate_probe",
+        description="聚合探针",
+        category="order",
+        turns=["查订单"],
+        expected_intent="order_query",
+        expected_keywords=["Nike"],
+        expected_requires_human=False,
+        expected_tools=["query_order"],
+        min_tool_calls=1,
+        max_tokens=200,
+        expected_route="postsale",
+    )
+    evaluator = Evaluator(
+        sandbox=FakeSandbox(),
+        client=None,
+        model="fake-model",
+        use_judge=False,
+        input_cost_per_million=0.15,
+        output_cost_per_million=0.60,
+    )
+    report = evaluator.run_all([case])
+    process = report["cases"][0]["process"]
+    summary = report["summary"]
+    assert process["tool_precision"] == 0.5
+    assert process["tool_recall"] == 1.0
+    assert round(process["tool_f1"], 6) == round(2 / 3, 6)
+    assert process["estimated_cost_usd"] == metrics.estimated_cost_usd(100, 50, 0.15, 0.60)
+    assert summary["latency_ms"]["p95"] == 120.0
+    assert summary["route_decisions"] == {"rule": 1, "llm": 0}
+    assert report["cases"][0]["failure_reasons"] == [
+        "tool_precision", "tool_efficiency"
+    ]
+    assert summary["failure_reasons"] == {
+        "tool_efficiency": 1, "tool_precision": 1
+    }
+
+
 # ---------- 测试 3：沙箱采集 ----------
 def test_sandbox_trace():
-    print("\n[3/6] 沙箱采集测试（E2E，需要 API）")
+    print("\n[5/8] 沙箱采集测试（E2E，需要 API）")
     sandbox = Sandbox(mode="single")
     case = EvalCase(
         id="trace_probe",
@@ -149,8 +290,11 @@ def test_sandbox_trace():
 
 # ---------- 测试 4：沙箱隔离 ----------
 def test_sandbox_isolation():
-    print("\n[4/6] 沙箱隔离测试（无需 API）")
+    print("\n[6/8] 沙箱隔离测试（无需 API）")
+    original_memory_enabled = settings.memory_enabled
+    original_mcp_enabled = settings.mcp_enabled
     sandbox = Sandbox(mode="single")
+    owned_tmp_root = sandbox.tmp_root
 
     p1 = sandbox.session_path_for("case_a")
     p2 = sandbox.session_path_for("case_b")
@@ -165,13 +309,27 @@ def test_sandbox_isolation():
             _ok("沙箱构建的 Agent 已关闭记忆（不污染评分）")
         else:
             _fail("记忆未关闭，会读 default.json 污染评分")
+        if agent.temperature == settings.eval_temperature == 0.0:
+            _ok("沙箱已固定 temperature=0（A/B 可归因）")
+        else:
+            _fail(f"沙箱评估温度不确定: {agent.temperature}")
+        if settings.memory_enabled == original_memory_enabled and settings.mcp_enabled == original_mcp_enabled:
+            _ok("沙箱未改写进程级 settings")
+        else:
+            _fail("沙箱泄漏了全局 settings 变更")
     finally:
         sandbox._close_tool_managers(agent)
+        sandbox.close()
+
+    if not owned_tmp_root.exists():
+        _ok("沙箱 close 后已清理自有临时目录")
+    else:
+        _fail(f"沙箱临时目录未清理: {owned_tmp_root}")
 
 
 # ---------- 测试 5：LLM judge ----------
 def test_judges():
-    print("\n[5/6] LLM judge 测试（需要 API）")
+    print("\n[7/8] LLM judge 测试（需要 API）")
     client = _client()
     model = settings.model_name
 
@@ -210,7 +368,7 @@ def test_judges():
 
 # ---------- 测试 6：Evaluator 双层 ----------
 def test_evaluator_two_tier():
-    print("\n[6/6] Evaluator 双层评分测试（E2E，需要 API）")
+    print("\n[8/8] Evaluator 双层评分测试（E2E，需要 API）")
     cases = [
         EvalCase(
             id="eval_order",
@@ -278,6 +436,8 @@ def main():
 
     test_dataset_load()
     test_metrics_rule_based()
+    test_optimized_router_covers_dataset()
+    test_evaluator_observability_aggregation()
     test_sandbox_trace()
     test_sandbox_isolation()
     test_judges()

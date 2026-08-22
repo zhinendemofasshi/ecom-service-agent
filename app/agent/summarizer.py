@@ -3,6 +3,8 @@ from typing import Optional
 
 from openai import OpenAI
 
+from app.config.model_compat import chat_completion_options
+
 from app.prompts.summarizer import SUMMARY_PROMPT
 
 
@@ -52,5 +54,6 @@ def summarize(
             {"role": "system", "content": SUMMARY_PROMPT},
             {"role": "user", "content": user_content},
         ],
+        **chat_completion_options(model),
     )
     return response.choices[0].message.content.strip()

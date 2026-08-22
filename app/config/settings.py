@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     eval_dataset_path: str = "app/evaluation/cases.json"
     eval_use_judge: bool = True  # 是否启用 LLM-as-judge（质量/幻觉/过程合理性）
     eval_pass_threshold: float = 0.6  # 单维度通过阈值（judge 归一化到 0-1 后比较）
+    eval_temperature: float = 0.0  # A/B 固定采样温度，避免把随机性误算为优化效果
+    # 成本估算单价（USD / 1M tokens）。跑评估时会把单价写入报告，便于复现。
+    # 默认对应 gpt-4o-mini 公开标准价；换模型时应在 .env 中同步修改。
+    eval_input_cost_per_million: float = 0.15
+    eval_output_cost_per_million: float = 0.60
 
     # 多轮对话管理
     session_path: str = "app/sessions/session.json"

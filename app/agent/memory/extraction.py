@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING
 
 from openai import OpenAI
 
+from app.config.model_compat import chat_completion_options
+
 from app.prompts.memory import LTM_EXTRACTION_PROMPT, STM_EXTRACTION_PROMPT
 
 if TYPE_CHECKING:
@@ -63,6 +65,7 @@ def extract_short_term_facts(
             {"role": "system", "content": prompt},
             {"role": "user", "content": transcript},
         ],
+        **chat_completion_options(model),
     )
     raw = response.choices[0].message.content.strip()
 
@@ -117,6 +120,7 @@ def extract_long_term_facts(
             {"role": "system", "content": prompt},
             {"role": "user", "content": "\n\n".join(parts)},
         ],
+        **chat_completion_options(model),
     )
     raw = response.choices[0].message.content.strip()
 

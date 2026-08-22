@@ -1,0 +1,2963 @@
+{
+  "metadata": {
+    "generated_at": "2026-08-15T13:37:18.635805+00:00",
+    "model": "gpt-4o-mini",
+    "mode": "multi",
+    "variant": "optimized",
+    "judge_enabled": false,
+    "temperature": 0.0,
+    "cost_scope": "agent chat completions only; embeddings and evaluator judge excluded",
+    "dataset_path": "app/evaluation/cases.json",
+    "dataset_sha256": "ed680041205e634a087b5a2b747f0278fdc5edef3bc865d8c0f0bba4cce9306d"
+  },
+  "summary": {
+    "total": 50,
+    "passed": 48,
+    "pass_rate": 0.96,
+    "failure_reasons": {
+      "tool_efficiency": 2,
+      "tool_precision": 1
+    },
+    "avg_process_score": 0.9925,
+    "avg_result_score": 1.0,
+    "avg_tool_precision": 0.99,
+    "avg_tool_recall": 1.0,
+    "avg_tool_f1": 0.9925925925925926,
+    "route_accuracy": 1.0,
+    "total_tokens": 236790,
+    "total_prompt_tokens": 218394,
+    "total_completion_tokens": 18396,
+    "avg_tokens_per_case": 4735.8,
+    "total_llm_calls": 160,
+    "avg_llm_calls_per_case": 3.2,
+    "route_decisions": {
+      "rule": 50,
+      "llm": 0
+    },
+    "estimated_cost_usd": 0.0437967,
+    "avg_cost_per_case_usd": 0.000875934,
+    "pricing": {
+      "input_cost_per_million_usd": 0.15,
+      "output_cost_per_million_usd": 0.6
+    },
+    "latency_ms": {
+      "avg": 6658.347185943276,
+      "p50": 5804.739062557928,
+      "p95": 11495.840383152241,
+      "max": 19409.89912499208,
+      "total_llm": 317774.42533674184
+    },
+    "by_category": {
+      "complaint": {
+        "total": 4,
+        "passed": 3,
+        "pass_rate": 0.75,
+        "avg_tool_precision": 0.875,
+        "avg_tool_recall": 1.0
+      },
+      "general": {
+        "total": 2,
+        "passed": 2,
+        "pass_rate": 1.0,
+        "avg_tool_precision": 1.0,
+        "avg_tool_recall": null
+      },
+      "knowledge": {
+        "total": 10,
+        "passed": 9,
+        "pass_rate": 0.9,
+        "avg_tool_precision": 1.0,
+        "avg_tool_recall": 1.0
+      },
+      "logistics": {
+        "total": 8,
+        "passed": 8,
+        "pass_rate": 1.0,
+        "avg_tool_precision": 1.0,
+        "avg_tool_recall": 1.0
+      },
+      "order": {
+        "total": 10,
+        "passed": 10,
+        "pass_rate": 1.0,
+        "avg_tool_precision": 1.0,
+        "avg_tool_recall": 1.0
+      },
+      "product": {
+        "total": 10,
+        "passed": 10,
+        "pass_rate": 1.0,
+        "avg_tool_precision": 1.0,
+        "avg_tool_recall": 1.0
+      },
+      "refund": {
+        "total": 6,
+        "passed": 6,
+        "pass_rate": 1.0,
+        "avg_tool_precision": 1.0,
+        "avg_tool_recall": 1.0
+      }
+    }
+  },
+  "cases": [
+    {
+      "case_id": "order_shipped_detail",
+      "description": "查询已发货订单详情",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4381,
+        "prompt_tokens": 4002,
+        "completion_tokens": 379,
+        "estimated_cost_usd": 0.0008276999999999999,
+        "end_to_end_latency_ms": 6389.058374916203,
+        "llm_latency_ms": 6211.914332932793,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_shipped_detail",
+        "turns": [
+          "帮我查一下订单 ORD-20240115-001 的状态"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单 **ORD-20240115-001** 的状态如下：\n\n- **订单状态**：已发货\n- **商品信息**：Nike Air Max 270 运动鞋 (SKU: SHOE-270-BK-42)，数量：1，价格：899.0元\n- **订单总金额**：899.0元\n- **下单时间**：2024年1月15日 10:30\n- **发货时间**：2024年1月16日 14:20\n- **快递公司**：顺丰速运\n- **物流单号**：SF1234567890\n- **预计送达时间**：2024年1月19日\n\n如果您需要进一步的帮助，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4381,
+        "prompt_tokens": 4002,
+        "completion_tokens": 379,
+        "end_to_end_latency_ms": 6389.058,
+        "llm_latency_ms": 6211.914,
+        "tool_latency_ms": 0.037,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_pending_detail",
+      "description": "查询待发货订单详情",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4260,
+        "prompt_tokens": 3967,
+        "completion_tokens": 293,
+        "estimated_cost_usd": 0.0007708499999999999,
+        "end_to_end_latency_ms": 5483.366708969697,
+        "llm_latency_ms": 5464.294917066582,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_pending_detail",
+        "turns": [
+          "订单 ORD-20240120-002 现在是什么状态？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单 **ORD-20240120-002** 目前状态为 **待处理**（pending）。订单中包含以下商品：\n\n1. **Apple AirPods Pro 2** - 数量：1 - 价格：1799.00元\n2. **AirPods 保护壳（透明）** - 数量：1 - 价格：29.90元\n\n订单总金额为 **1828.90元**。该订单尚未发货，预计发货时间尚未确定。如果您有其他问题或需要进一步的帮助，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4260,
+        "prompt_tokens": 3967,
+        "completion_tokens": 293,
+        "end_to_end_latency_ms": 5483.367,
+        "llm_latency_ms": 5464.295,
+        "tool_latency_ms": 0.067,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_delivered_detail",
+      "description": "查询已签收订单详情",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4127,
+        "prompt_tokens": 3928,
+        "completion_tokens": 199,
+        "estimated_cost_usd": 0.0007085999999999999,
+        "end_to_end_latency_ms": 4272.119125002064,
+        "llm_latency_ms": 4251.415500068106,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_delivered_detail",
+        "turns": [
+          "看下 ORD-20240110-003 买了什么，多少钱"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您在订单号 **ORD-20240110-003** 中购买了以下商品：\n\n- **商品名称**：小米14 Ultra 手机\n- **数量**：1\n- **价格**：5999.00 元\n\n订单总金额为 **5999.00 元**。如果您还有其他问题，欢迎随时询问！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4127,
+        "prompt_tokens": 3928,
+        "completion_tokens": 199,
+        "end_to_end_latency_ms": 4272.119,
+        "llm_latency_ms": 4251.416,
+        "tool_latency_ms": 0.059,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_refund_processing",
+      "description": "查询退款中订单状态",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4594,
+        "prompt_tokens": 4115,
+        "completion_tokens": 479,
+        "estimated_cost_usd": 0.00090465,
+        "end_to_end_latency_ms": 7555.586208007298,
+        "llm_latency_ms": 7532.426582882181,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_refund_processing",
+        "turns": [
+          "请查 ORD-20240118-004 的订单和退款进度"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单号为 **ORD-20240118-004** 的订单信息如下：\n\n- **商品**：Levi's 501 经典牛仔裤\n- **数量**：1\n- **价格**：699.0 元\n- **订单状态**：退款处理中\n- **退款原因**：尺码不合适\n- **退款状态**：审核中\n- **申请退款时间**：2024年1月22日 10:00\n- **下单时间**：2024年1月18日 12:00\n- **发货时间**：2024年1月19日 09:00\n- **物流单号**：YT6655443322\n- **承运商**：圆通速递\n- **预计送达时间**：2024年1月22日\n- **实际送达时间**：2024年1月21日 15:00\n\n如果您有其他问题或需要进一步的帮助，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4594,
+        "prompt_tokens": 4115,
+        "completion_tokens": 479,
+        "end_to_end_latency_ms": 7555.586,
+        "llm_latency_ms": 7532.427,
+        "tool_latency_ms": 0.049,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_dyson_total",
+      "description": "查询多商品订单金额",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4210,
+        "prompt_tokens": 3957,
+        "completion_tokens": 253,
+        "estimated_cost_usd": 0.0007453499999999999,
+        "end_to_end_latency_ms": 4919.185500009917,
+        "llm_latency_ms": 4895.7803341327235,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_dyson_total",
+        "turns": [
+          "ORD-20240122-005 订单里有哪些东西，合计多少？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单（订单号：ORD-20240122-005）包含以下商品：\n\n1. **戴森 V15 吸尘器** - 1个，单价：4299.00元\n2. **戴森 V15 替换滤芯** - 2个，单价：199.00元\n\n订单合计金额为 **4697.00元**。目前订单状态为待发货。请问还有其他需要帮助的吗？",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4210,
+        "prompt_tokens": 3957,
+        "completion_tokens": 253,
+        "end_to_end_latency_ms": 4919.186,
+        "llm_latency_ms": 4895.78,
+        "tool_latency_ms": 0.06,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_unknown_id",
+      "description": "查询不存在的订单",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 7036,
+        "prompt_tokens": 6065,
+        "completion_tokens": 971,
+        "estimated_cost_usd": 0.00149235,
+        "end_to_end_latency_ms": 12053.04241599515,
+        "llm_latency_ms": 12029.839584021829,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_unknown_id",
+        "turns": [
+          "帮我查订单 ORD-20990101-999"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "我没有找到订单号为 **ORD-20990101-999** 的订单。请您核实一下订单号。\n\n不过，我查到了您在平台上的其他订单，以下是订单列表：\n\n1. **订单号**: ORD-20240115-001\n   - **状态**: 已发货\n   - **商品**: Nike Air Max 270 运动鞋\n   - **金额**: 899.0元\n   - **下单时间**: 2024-01-15 10:30:00\n\n2. **订单号**: ORD-20240120-002\n   - **状态**: 待发货\n   - **商品**: Apple AirPods Pro 2、AirPods 保护壳（透明）\n   - **金额**: 1828.9元\n   - **下单时间**: 2024-01-20 09:15:00\n\n3. **订单号**: ORD-20240110-003\n   - **状态**: 已签收\n   - **商品**: 小米14 Ultra 手机\n   - **金额**: 5999.0元\n   - **下单时间**: 2024-01-10 16:00:00\n\n4. **订单号**: ORD-20240118-004\n   - **状态**: 退款中\n   - **商品**: Levi's 501 经典牛仔裤\n   - **金额**: 699.0元\n   - **下单时间**: 2024-01-18 12:00:00\n\n5. **订单号**: ORD-20240122-005\n   - **状态**: 待发货\n   - **商品**: 戴森 V15 吸尘器、戴森 V15 替换滤芯\n   - **金额**: 4697.0元\n   - **下单时间**: 2024-01-22 20:00:00\n\n请问您需要查询哪个订单的详细信息呢？",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 7036,
+        "prompt_tokens": 6065,
+        "completion_tokens": 971,
+        "end_to_end_latency_ms": 12053.042,
+        "llm_latency_ms": 12029.84,
+        "tool_latency_ms": 0.081,
+        "num_llm_calls": 4,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "query_order",
+          "list_user_orders"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_list_all",
+      "description": "未提供订单号时列出全部订单",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5155,
+        "prompt_tokens": 4374,
+        "completion_tokens": 781,
+        "estimated_cost_usd": 0.0011247,
+        "end_to_end_latency_ms": 9652.680292027071,
+        "llm_latency_ms": 9630.623042117804,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_list_all",
+        "turns": [
+          "我都买过哪些东西？帮我看下我的订单"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您最近的订单如下：\n\n1. **订单号：ORD-20240115-001**\n   - 状态：已发货\n   - 商品：Nike Air Max 270 运动鞋\n   - 总金额：899.0元\n   - 下单时间：2024-01-15 10:30:00\n\n2. **订单号：ORD-20240120-002**\n   - 状态：待发货\n   - 商品：Apple AirPods Pro 2、AirPods 保护壳（透明）\n   - 总金额：1828.9元\n   - 下单时间：2024-01-20 09:15:00\n\n3. **订单号：ORD-20240110-003**\n   - 状态：已签收\n   - 商品：小米14 Ultra 手机\n   - 总金额：5999.0元\n   - 下单时间：2024-01-10 16:00:00\n\n4. **订单号：ORD-20240118-004**\n   - 状态：退款中\n   - 商品：Levi's 501 经典牛仔裤\n   - 总金额：699.0元\n   - 下单时间：2024-01-18 12:00:00\n\n5. **订单号：ORD-20240122-005**\n   - 状态：待发货\n   - 商品：戴森 V15 吸尘器、戴森 V15 替换滤芯\n   - 总金额：4697.0元\n   - 下单时间：2024-01-22 20:00:00\n\n如果您需要进一步的信息或帮助，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 5155,
+        "prompt_tokens": 4374,
+        "completion_tokens": 781,
+        "end_to_end_latency_ms": 9652.68,
+        "llm_latency_ms": 9630.623,
+        "tool_latency_ms": 0.102,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "list_user_orders"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_list_colloquial",
+      "description": "口语化查购买记录",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5310,
+        "prompt_tokens": 4422,
+        "completion_tokens": 888,
+        "estimated_cost_usd": 0.0011960999999999999,
+        "end_to_end_latency_ms": 11012.93387496844,
+        "llm_latency_ms": 10988.69362496771,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_list_colloquial",
+        "turns": [
+          "我之前下的单都给我列一下"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "以下是您之前下的订单列表：\n\n1. **订单号**: ORD-20240115-001\n   - **状态**: 已发货\n   - **商品**: Nike Air Max 270 运动鞋\n   - **金额**: 899.0元\n   - **下单时间**: 2024-01-15 10:30:00\n\n2. **订单号**: ORD-20240120-002\n   - **状态**: 待发货\n   - **商品**: Apple AirPods Pro 2、AirPods 保护壳（透明）\n   - **金额**: 1828.9元\n   - **下单时间**: 2024-01-20 09:15:00\n\n3. **订单号**: ORD-20240110-003\n   - **状态**: 已签收\n   - **商品**: 小米14 Ultra 手机\n   - **金额**: 5999.0元\n   - **下单时间**: 2024-01-10 16:00:00\n\n4. **订单号**: ORD-20240118-004\n   - **状态**: 退款中\n   - **商品**: Levi's 501 经典牛仔裤\n   - **金额**: 699.0元\n   - **下单时间**: 2024-01-18 12:00:00\n\n5. **订单号**: ORD-20240122-005\n   - **状态**: 待发货\n   - **商品**: 戴森 V15 吸尘器、戴森 V15 替换滤芯\n   - **金额**: 4697.0元\n   - **下单时间**: 2024-01-22 20:00:00\n\n如果您需要对某个订单进行进一步的操作，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 5310,
+        "prompt_tokens": 4422,
+        "completion_tokens": 888,
+        "end_to_end_latency_ms": 11012.934,
+        "llm_latency_ms": 10988.694,
+        "tool_latency_ms": 0.108,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "list_user_orders"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_multi_turn_id",
+      "description": "多轮先表达查单意图再补订单号",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 6919,
+        "prompt_tokens": 6414,
+        "completion_tokens": 505,
+        "estimated_cost_usd": 0.0012651,
+        "end_to_end_latency_ms": 10095.53325001616,
+        "llm_latency_ms": 10070.16508304514,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_multi_turn_id",
+        "turns": [
+          "我想查一下我的订单",
+          "订单号是 ORD-20240110-003"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单详情如下：\n\n- **订单号**：ORD-20240110-003\n- **用户**：大壮\n- **订单状态**：已送达\n- **商品**：小米14 Ultra 手机\n- **数量**：1\n- **价格**：5999.00元\n- **订单创建时间**：2024-01-10 16:00:00\n- **发货时间**：2024-01-11 08:00:00\n- **物流单号**：JD9876543210\n- **快递公司**：京东物流\n- **预计送达时间**：2024-01-13\n- **实际送达时间**：2024-01-13 11:30:00\n\n如果您还有其他问题或需要进一步的帮助，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 6919,
+        "prompt_tokens": 6414,
+        "completion_tokens": 505,
+        "end_to_end_latency_ms": 10095.533,
+        "llm_latency_ms": 10070.165,
+        "tool_latency_ms": 0.059,
+        "num_llm_calls": 5,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "order_multi_turn_selection",
+      "description": "多轮从订单列表中选择查询",
+      "category": "order",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 12277,
+        "prompt_tokens": 10946,
+        "completion_tokens": 1331,
+        "estimated_cost_usd": 0.0024405,
+        "end_to_end_latency_ms": 19409.89912499208,
+        "llm_latency_ms": 19380.598334013484,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "order_multi_turn_selection",
+        "turns": [
+          "帮我找一下订单",
+          "我要看 ORD-20240115-001 这单"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "以下是订单 **ORD-20240115-001** 的详细信息：\n\n- **用户**: 小明\n- **状态**: 已发货\n- **商品**: \n  - **名称**: Nike Air Max 270 运动鞋\n  - **SKU**: SHOE-270-BK-42\n  - **数量**: 1\n  - **单价**: 899.0元\n- **总金额**: 899.0元\n- **下单时间**: 2024-01-15 10:30:00\n- **发货时间**: 2024-01-16 14:20:00\n- **快递公司**: 顺丰速运\n- **物流单号**: SF1234567890\n- **预计送达时间**: 2024-01-19\n\n请问您还需要其他帮助吗？",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 12277,
+        "prompt_tokens": 10946,
+        "completion_tokens": 1331,
+        "end_to_end_latency_ms": 19409.899,
+        "llm_latency_ms": 19380.598,
+        "tool_latency_ms": 0.152,
+        "num_llm_calls": 6,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "list_user_orders",
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "logistics_in_transit",
+      "description": "查询运输中物流",
+      "category": "logistics",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4485,
+        "prompt_tokens": 4050,
+        "completion_tokens": 435,
+        "estimated_cost_usd": 0.0008685,
+        "end_to_end_latency_ms": 7207.5963750248775,
+        "llm_latency_ms": 7183.749457937665,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "logistics_in_transit",
+        "turns": [
+          "我的订单 ORD-20240115-001 现在到哪了？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单 **ORD-20240115-001** 目前的物流状态如下：\n\n- **快递公司**：顺丰速运\n- **物流单号**：SF1234567890\n- **当前状态**：正在派送中\n\n### 物流进度：\n1. **2024-01-16 14:20** - 深圳南山区：快件已揽收\n2. **2024-01-17 06:00** - 广州转运中心：已到达\n3. **2024-01-17 22:00** - 上海转运中心：已到达\n4. **2024-01-18 08:30** - 上海浦东区：正在派送中\n\n您的包裹正在派送中，预计很快就会送达！如果您有其他问题，欢迎随时询问。",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4485,
+        "prompt_tokens": 4050,
+        "completion_tokens": 435,
+        "end_to_end_latency_ms": 7207.596,
+        "llm_latency_ms": 7183.749,
+        "tool_latency_ms": 0.058,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_logistics"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "logistics_delivered_jd",
+      "description": "查询已签收京东物流",
+      "category": "logistics",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4347,
+        "prompt_tokens": 3982,
+        "completion_tokens": 365,
+        "estimated_cost_usd": 0.0008163,
+        "end_to_end_latency_ms": 6277.0258750533685,
+        "llm_latency_ms": 6254.855666891672,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "logistics_delivered_jd",
+        "turns": [
+          "ORD-20240110-003 的快递签收了吗？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "订单号为 **ORD-20240110-003** 的快递已经签收。以下是物流信息：\n\n- **快递公司**：京东物流\n- **快递单号**：JD9876543210\n- **状态**：已签收\n\n**物流轨迹**：\n1. **2024-01-11 08:00** - 北京亦庄仓库：快件已出库\n2. **2024-01-12 10:00** - 北京海淀区：正在派送中\n3. **2024-01-13 11:30** - 北京海淀区：已签收\n\n如果您还有其他问题，欢迎随时询问！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4347,
+        "prompt_tokens": 3982,
+        "completion_tokens": 365,
+        "end_to_end_latency_ms": 6277.026,
+        "llm_latency_ms": 6254.856,
+        "tool_latency_ms": 0.053,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_logistics"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "logistics_delivered_yto",
+      "description": "查询已签收圆通物流",
+      "category": "logistics",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4550,
+        "prompt_tokens": 4093,
+        "completion_tokens": 457,
+        "estimated_cost_usd": 0.0008881499999999999,
+        "end_to_end_latency_ms": 9524.865666986443,
+        "llm_latency_ms": 9501.685792929493,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "logistics_delivered_yto",
+        "turns": [
+          "查下订单 ORD-20240118-004 的物流轨迹"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "订单 **ORD-20240118-004** 的物流轨迹如下：\n\n- **快递公司**：圆通速递\n- **物流单号**：YT6655443322\n- **当前状态**：已签收\n\n### 物流事件：\n1. **2024-01-19 09:00** - 杭州余杭区：快件已揽收\n2. **2024-01-20 06:00** - 杭州转运中心：已发出\n3. **2024-01-20 18:00** - 上海转运中心：已到达\n4. **2024-01-21 09:00** - 上海普陀区：正在派送中\n5. **2024-01-21 15:00** - 上海普陀区：已签收\n\n如果您还有其他问题或需要进一步的帮助，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4550,
+        "prompt_tokens": 4093,
+        "completion_tokens": 457,
+        "end_to_end_latency_ms": 9524.866,
+        "llm_latency_ms": 9501.686,
+        "tool_latency_ms": 0.037,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_logistics"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "logistics_pending_no_tracking",
+      "description": "查询未发货订单物流",
+      "category": "logistics",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3914,
+        "prompt_tokens": 3760,
+        "completion_tokens": 154,
+        "estimated_cost_usd": 0.0006564,
+        "end_to_end_latency_ms": 4462.08695799578,
+        "llm_latency_ms": 4438.363166991621,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "logistics_pending_no_tracking",
+        "turns": [
+          "订单 ORD-20240120-002 的快递到哪了？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "订单 ORD-20240120-002 尚未发货，因此目前没有物流信息可供查询。请您耐心等待，发货后我会第一时间为您提供物流进度。如果您有其他问题或需要帮助，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 3914,
+        "prompt_tokens": 3760,
+        "completion_tokens": 154,
+        "end_to_end_latency_ms": 4462.087,
+        "llm_latency_ms": 4438.363,
+        "tool_latency_ms": 0.03,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_logistics"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "logistics_unknown_order",
+      "description": "查询不存在订单的物流",
+      "category": "logistics",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 6961,
+        "prompt_tokens": 6043,
+        "completion_tokens": 918,
+        "estimated_cost_usd": 0.00145725,
+        "end_to_end_latency_ms": 11890.945708029903,
+        "llm_latency_ms": 11865.539832855575,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "logistics_unknown_order",
+        "turns": [
+          "ORD-20990101-999 物流怎么不动了？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "我没有找到订单号为 **ORD-20990101-999** 的订单。请您确认一下订单号是否正确。\n\n不过，我查到了您在平台上的其他订单。以下是您的订单列表：\n\n1. **订单号：ORD-20240115-001**\n   - 状态：已发货\n   - 商品：Nike Air Max 270 运动鞋\n   - 总金额：899.0元\n   - 下单时间：2024-01-15 10:30:00\n\n2. **订单号：ORD-20240120-002**\n   - 状态：待发货\n   - 商品：Apple AirPods Pro 2、AirPods 保护壳（透明）\n   - 总金额：1828.9元\n   - 下单时间：2024-01-20 09:15:00\n\n3. **订单号：ORD-20240110-003**\n   - 状态：已签收\n   - 商品：小米14 Ultra 手机\n   - 总金额：5999.0元\n   - 下单时间：2024-01-10 16:00:00\n\n4. **订单号：ORD-20240118-004**\n   - 状态：退款中\n   - 商品：Levi's 501 经典牛仔裤\n   - 总金额：699.0元\n   - 下单时间：2024-01-18 12:00:00\n\n5. **订单号：ORD-20240122-005**\n   - 状态：待发货\n   - 商品：戴森 V15 吸尘器、戴森 V15 替换滤芯\n   - 总金额：4697.0元\n   - 下单时间：2024-01-22 20:00:00\n\n请您确认一下您想查询的订单号，或者提供更多信息，我将帮助您解决问题。",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 6961,
+        "prompt_tokens": 6043,
+        "completion_tokens": 918,
+        "end_to_end_latency_ms": 11890.946,
+        "llm_latency_ms": 11865.54,
+        "tool_latency_ms": 0.104,
+        "num_llm_calls": 4,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "query_logistics",
+          "list_user_orders"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "logistics_colloquial_where",
+      "description": "口语化查件到哪",
+      "category": "logistics",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4489,
+        "prompt_tokens": 4050,
+        "completion_tokens": 439,
+        "estimated_cost_usd": 0.0008709,
+        "end_to_end_latency_ms": 7168.887416948564,
+        "llm_latency_ms": 7147.432792000473,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "logistics_colloquial_where",
+        "turns": [
+          "ORD-20240115-001 这件到哪儿啦"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单（订单号：ORD-20240115-001）目前的物流状态如下：\n\n- **快递公司**：顺丰速运\n- **物流单号**：SF1234567890\n- **当前状态**：正在派送中\n\n### 物流进度：\n1. **2024-01-16 14:20** - 深圳南山区：快件已揽收\n2. **2024-01-17 06:00** - 广州转运中心：已到达\n3. **2024-01-17 22:00** - 上海转运中心：已到达\n4. **2024-01-18 08:30** - 上海浦东区：正在派送中\n\n您的包裹正在派送中，预计很快就会送达！如果您有其他问题，欢迎随时询问。",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4489,
+        "prompt_tokens": 4050,
+        "completion_tokens": 439,
+        "end_to_end_latency_ms": 7168.887,
+        "llm_latency_ms": 7147.433,
+        "tool_latency_ms": 0.044,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_logistics"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "logistics_multi_turn_id",
+      "description": "多轮先查快递再补订单号",
+      "category": "logistics",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 6921,
+        "prompt_tokens": 6396,
+        "completion_tokens": 525,
+        "estimated_cost_usd": 0.0012744000000000002,
+        "end_to_end_latency_ms": 10375.181416980922,
+        "llm_latency_ms": 10349.174667033367,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "logistics_multi_turn_id",
+        "turns": [
+          "帮我查快递",
+          "订单是 ORD-20240118-004"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单（订单号：ORD-20240118-004）的快递信息如下：\n\n- **快递公司**：圆通速递\n- **快递单号**：YT6655443322\n- **当前状态**：已签收\n\n### 物流轨迹：\n1. **2024-01-19 09:00** - 杭州余杭区：快件已揽收\n2. **2024-01-20 06:00** - 杭州转运中心：已发出\n3. **2024-01-20 18:00** - 上海转运中心：已到达\n4. **2024-01-21 09:00** - 上海普陀区：正在派送中\n5. **2024-01-21 15:00** - 上海普陀区：已签收\n\n如果您还有其他问题，欢迎随时询问！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 6921,
+        "prompt_tokens": 6396,
+        "completion_tokens": 525,
+        "end_to_end_latency_ms": 10375.181,
+        "llm_latency_ms": 10349.175,
+        "tool_latency_ms": 0.059,
+        "num_llm_calls": 5,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_logistics"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "logistics_dyson_unshipped",
+      "description": "查询戴森订单未发货状态",
+      "category": "logistics",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4227,
+        "prompt_tokens": 3966,
+        "completion_tokens": 261,
+        "estimated_cost_usd": 0.0007515,
+        "end_to_end_latency_ms": 5250.231249956414,
+        "llm_latency_ms": 5226.56537394505,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "logistics_dyson_unshipped",
+        "turns": [
+          "戴森那单 ORD-20240122-005 发货了没，有运单吗？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单 **ORD-20240122-005** 目前状态为 **待发货**，还没有发货，因此没有运单号和快递信息。订单中包含以下商品：\n\n- **戴森 V15 吸尘器**，数量：1，价格：4299元\n- **戴森 V15 替换滤芯**，数量：2，价格：199元（每个）\n\n如果您有其他问题或需要进一步的帮助，请告诉我！",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4227,
+        "prompt_tokens": 3966,
+        "completion_tokens": 261,
+        "end_to_end_latency_ms": 5250.231,
+        "llm_latency_ms": 5226.565,
+        "tool_latency_ms": 0.062,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_nike_stock",
+      "description": "查询 Nike 运动鞋库存",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3422,
+        "prompt_tokens": 3148,
+        "completion_tokens": 274,
+        "estimated_cost_usd": 0.0006366,
+        "end_to_end_latency_ms": 5339.657292002812,
+        "llm_latency_ms": 5318.338625947945,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_nike_stock",
+        "turns": [
+          "Nike Air Max 270 运动鞋还有货吗？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "Nike Air Max 270 运动鞋目前有货哦！以下是详细信息：\n\n- **价格**：899元\n- **库存**：156双\n- **颜色**：黑色\n- **尺码**：42\n- **材质**：网面+合成革\n- **特点**：经典气垫缓震，透气网面鞋身，适合日常跑步和休闲穿搭\n\n如果您需要购买或者有其他问题，随时告诉我！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3422,
+        "prompt_tokens": 3148,
+        "completion_tokens": 274,
+        "end_to_end_latency_ms": 5339.657,
+        "llm_latency_ms": 5318.339,
+        "tool_latency_ms": 0.189,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_airpods_specs",
+      "description": "查询 AirPods 续航和连接规格",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3699,
+        "prompt_tokens": 3401,
+        "completion_tokens": 298,
+        "estimated_cost_usd": 0.0006889499999999999,
+        "end_to_end_latency_ms": 5066.3330419920385,
+        "llm_latency_ms": 5042.425374966115,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_airpods_specs",
+        "turns": [
+          "AirPods Pro 2 续航多久，蓝牙什么版本？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "Apple AirPods Pro 2 的续航时间为 **6小时**（在主动噪声取消模式开启的情况下），并且它使用的是 **蓝牙5.3** 连接。\n\n这款耳机还具备主动降噪、自适应透明模式和个性化空间音频等功能，售价为 **1799元**，目前库存还有 **89件**。如果您对这款耳机感兴趣，或者有其他问题，随时可以问我哦！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3699,
+        "prompt_tokens": 3401,
+        "completion_tokens": 298,
+        "end_to_end_latency_ms": 5066.333,
+        "llm_latency_ms": 5042.425,
+        "tool_latency_ms": 0.24,
+        "num_llm_calls": 3,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "query_product",
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_xiaomi_storage",
+      "description": "查询小米手机存储和处理器",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3433,
+        "prompt_tokens": 3156,
+        "completion_tokens": 277,
+        "estimated_cost_usd": 0.0006395999999999999,
+        "end_to_end_latency_ms": 5048.9487500162795,
+        "llm_latency_ms": 5025.141251040623,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_xiaomi_storage",
+        "turns": [
+          "小米14 Ultra 的存储和芯片参数是什么？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "小米14 Ultra 手机的存储和芯片参数如下：\n\n- **存储**：16GB RAM + 512GB ROM\n- **芯片**：搭载骁龙8 Gen3处理器\n\n此外，它还配备了6.73英寸的2K AMOLED护眼屏和徕卡光学四摄，电池容量为5000mAh。价格为5999元，目前库存还有42台哦！如果您有兴趣或者需要更多信息，随时告诉我！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3433,
+        "prompt_tokens": 3156,
+        "completion_tokens": 277,
+        "end_to_end_latency_ms": 5048.949,
+        "llm_latency_ms": 5025.141,
+        "tool_latency_ms": 0.134,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_levis_out_of_stock",
+      "description": "查询售罄牛仔裤",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3294,
+        "prompt_tokens": 3111,
+        "completion_tokens": 183,
+        "estimated_cost_usd": 0.0005764499999999999,
+        "end_to_end_latency_ms": 4206.302084028721,
+        "llm_latency_ms": 4184.380375081673,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_levis_out_of_stock",
+        "turns": [
+          "Levi's 501 牛仔裤 30 码还有货吗？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "很抱歉，Levi's 501 经典牛仔裤 30 码目前没有库存。它的价格是699元，采用经典直筒版型和原色丹宁面料。如果您需要其他尺码或款式的推荐，欢迎告诉我！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3294,
+        "prompt_tokens": 3111,
+        "completion_tokens": 183,
+        "end_to_end_latency_ms": 4206.302,
+        "llm_latency_ms": 4184.38,
+        "tool_latency_ms": 0.139,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_dyson_specs",
+      "description": "查询戴森吸尘器续航和吸力",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3411,
+        "prompt_tokens": 3154,
+        "completion_tokens": 257,
+        "estimated_cost_usd": 0.0006272999999999999,
+        "end_to_end_latency_ms": 5084.971958072856,
+        "llm_latency_ms": 5063.505833037198,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_dyson_specs",
+        "turns": [
+          "戴森 V15 吸尘器续航和吸力多少？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "戴森 V15 Detect 吸尘器的续航时间为 **60分钟**，吸力达到 **230AW**。这款吸尘器还配备了激光探测微尘和压电式声学传感器，LCD 屏幕实时显示吸入颗粒，非常适合家庭使用。\n\n目前价格为 **4299元**，库存还有 **23台**。如果您有兴趣或者需要更多信息，随时告诉我哦！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3411,
+        "prompt_tokens": 3154,
+        "completion_tokens": 257,
+        "end_to_end_latency_ms": 5084.972,
+        "llm_latency_ms": 5063.506,
+        "tool_latency_ms": 0.135,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_case_price",
+      "description": "查询 AirPods 保护壳价格",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3407,
+        "prompt_tokens": 3210,
+        "completion_tokens": 197,
+        "estimated_cost_usd": 0.0005997,
+        "end_to_end_latency_ms": 4160.798582946882,
+        "llm_latency_ms": 4139.519208925776,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_case_price",
+        "turns": [
+          "AirPods 透明保护壳多少钱，是什么材质？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "我找到了一款 AirPods 透明保护壳，价格为 **29.9元**。它的材质是 **TPU**，具有防摔防刮的特性，并且设计有精准开孔，适配 AirPods Pro 2。\n\n如果您有其他问题或者需要更多推荐，随时告诉我哦！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3407,
+        "prompt_tokens": 3210,
+        "completion_tokens": 197,
+        "end_to_end_latency_ms": 4160.799,
+        "llm_latency_ms": 4139.519,
+        "tool_latency_ms": 0.149,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_query_by_sku",
+      "description": "使用 SKU 精确查商品",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3517,
+        "prompt_tokens": 3181,
+        "completion_tokens": 336,
+        "estimated_cost_usd": 0.00067875,
+        "end_to_end_latency_ms": 5592.277082963847,
+        "llm_latency_ms": 5569.906668039039,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_query_by_sku",
+        "turns": [
+          "查一下商品 SHOE-270-BK-42 的信息"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "我为您查到了商品信息：\n\n### Nike Air Max 270 运动鞋\n- **商品编号**: SHOE-270-BK-42\n- **价格**: 899.0元\n- **库存**: 156双\n- **描述**: 经典气垫缓震，透气网面鞋身，适合日常跑步和休闲穿搭\n- **规格**:\n  - **颜色**: 黑色\n  - **尺码**: 42\n  - **材质**: 网面+合成革\n\n如果您有兴趣购买或者需要更多信息，请告诉我！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3517,
+        "prompt_tokens": 3181,
+        "completion_tokens": 336,
+        "end_to_end_latency_ms": 5592.277,
+        "llm_latency_ms": 5569.907,
+        "tool_latency_ms": 0.053,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_headphone_search",
+      "description": "按品类查询耳机",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3455,
+        "prompt_tokens": 3148,
+        "completion_tokens": 307,
+        "estimated_cost_usd": 0.0006564,
+        "end_to_end_latency_ms": 5183.128042030148,
+        "llm_latency_ms": 5152.874624938704,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_headphone_search",
+        "turns": [
+          "你们有什么耳机商品？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "我们目前有一款耳机商品，具体信息如下：\n\n### Apple AirPods Pro 2\n- **价格**：1799元\n- **库存**：89件\n- **描述**：主动降噪，自适应透明模式，个性化空间音频，USB-C 充电\n- **规格**：\n  - 颜色：白色\n  - 连接方式：蓝牙5.3\n  - 续航：6小时（ANC开启）\n\n如果您对这款耳机感兴趣或者有其他需求，欢迎随时告诉我！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3455,
+        "prompt_tokens": 3148,
+        "completion_tokens": 307,
+        "end_to_end_latency_ms": 5183.128,
+        "llm_latency_ms": 5152.875,
+        "tool_latency_ms": 0.091,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_phone_recommend",
+      "description": "按品类推荐手机",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3523,
+        "prompt_tokens": 3181,
+        "completion_tokens": 342,
+        "estimated_cost_usd": 0.0006823499999999999,
+        "end_to_end_latency_ms": 5399.227417074144,
+        "llm_latency_ms": 5377.71991698537,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_phone_recommend",
+        "turns": [
+          "推荐一款性能好的手机，说下价格"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "我推荐您考虑一下**小米14 Ultra 手机**。这款手机的性能非常出色，搭载了骁龙8 Gen3处理器，配备徕卡光学四摄，拥有2K护眼屏和5000mAh大电池，适合喜欢拍照和追求高性能的用户。\n\n- **价格**：5999元\n- **存储**：16GB+512GB\n- **屏幕**：6.73英寸 2K AMOLED\n- **颜色**：黑色\n- **库存**：42台\n\n如果您对这款手机感兴趣或者有其他需求，欢迎随时问我！",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3523,
+        "prompt_tokens": 3181,
+        "completion_tokens": 342,
+        "end_to_end_latency_ms": 5399.227,
+        "llm_latency_ms": 5377.72,
+        "tool_latency_ms": 0.131,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "product_unknown_keyword",
+      "description": "查询未收录商品时仍必须用工具",
+      "category": "product",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 3144,
+        "prompt_tokens": 2996,
+        "completion_tokens": 148,
+        "estimated_cost_usd": 0.0005382,
+        "end_to_end_latency_ms": 4160.068167024292,
+        "llm_latency_ms": 4136.798374936916,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "product_unknown_keyword",
+        "turns": [
+          "有没有露营帐篷？帮我查库存"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "抱歉，我没有找到与「露营帐篷」匹配的商品。您可以尝试使用其他关键词，比如「帐篷」或「户外帐篷」，我可以帮您再查一下。",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 3144,
+        "prompt_tokens": 2996,
+        "completion_tokens": 148,
+        "end_to_end_latency_ms": 4160.068,
+        "llm_latency_ms": 4136.798,
+        "tool_latency_ms": 0.067,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_product"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_seven_day_return",
+      "description": "查询七天无理由退货",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5703,
+        "prompt_tokens": 5130,
+        "completion_tokens": 573,
+        "estimated_cost_usd": 0.0011133,
+        "end_to_end_latency_ms": 9870.154166943394,
+        "llm_latency_ms": 8212.218167027459,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_seven_day_return",
+        "turns": [
+          "你们支持七天无理由退货吗？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "是的，我们支持七天无理由退货。具体政策如下：\n\n1. **适用范围**：自顾客签收商品之日起7天内（含第7天），在不影响商品二次销售的前提下，可以申请七天无理由退货。商品需保持本体、吊牌、包装、配件、赠品齐全，未洗涤、未使用、未损坏。\n\n2. **不适用商品**：以下商品不支持七天无理由退货：\n   - 个人定制类商品（如刻字、定制尺寸的鞋服等）\n   - 鲜活易腐商品（如水果、海鲜等）\n   - 数字化商品（如已激活的软件序列号等）\n   - 拆封后影响人身安全或健康的商品（如化妆品、内衣等）\n\n3. **运费规则**：退货运费由顾客承担，建议使用平台合作的上门取件服务，运费从退款金额中扣除。\n\n如果您有具体的订单需要退货，可以告诉我订单号，我可以帮助您处理。",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 5703,
+        "prompt_tokens": 5130,
+        "completion_tokens": 573,
+        "end_to_end_latency_ms": 9870.154,
+        "llm_latency_ms": 8212.218,
+        "tool_latency_ms": 1634.369,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_return_exclusions",
+      "description": "查询无理由退货例外",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5323,
+        "prompt_tokens": 5010,
+        "completion_tokens": 313,
+        "estimated_cost_usd": 0.0009392999999999999,
+        "end_to_end_latency_ms": 7637.808499974199,
+        "llm_latency_ms": 6445.423415862024,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_return_exclusions",
+        "turns": [
+          "哪些商品不支持七天无理由？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "以下商品不支持七天无理由退货：\n\n1. **个人定制类商品**：如刻字、刻名、定制尺寸的鞋服等。\n2. **鲜活易腐商品**：如水果、海鲜、生鲜冷链等。\n3. **数字化商品**：如已激活的软件序列号、电子卡券、电子书。\n4. **拆封后影响人身安全或健康的商品**：如化妆品、内衣、贴身衣物（已拆封）。\n\n如果您还有其他问题，欢迎随时询问！",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 5323,
+        "prompt_tokens": 5010,
+        "completion_tokens": 313,
+        "end_to_end_latency_ms": 7637.808,
+        "llm_latency_ms": 6445.423,
+        "tool_latency_ms": 1170.4,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_quality_evidence",
+      "description": "查询质量问题举证材料",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5199,
+        "prompt_tokens": 4920,
+        "completion_tokens": 279,
+        "estimated_cost_usd": 0.0009054,
+        "end_to_end_latency_ms": 7208.722083945759,
+        "llm_latency_ms": 6284.4547079876065,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_quality_evidence",
+        "turns": [
+          "商品有质量问题，申请售后要拍哪些材料？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "申请商品质量问题的售后时，建议您准备以下材料：\n\n1. **商品外观照片**：包括瑕疵处的特写和整体照。\n2. **包装外观照片**：用于判定是否因运输造成的损坏。\n3. **故障演示视频**：如果是电子产品，建议提供故障演示视频。\n\n请确保在签收后15天内申请退换货，运费由平台承担。若您需要进一步的帮助，请告诉我！",
+        "intent": "after_sale",
+        "requires_human": false,
+        "total_tokens": 5199,
+        "prompt_tokens": 4920,
+        "completion_tokens": 279,
+        "end_to_end_latency_ms": 7208.722,
+        "llm_latency_ms": 6284.455,
+        "tool_latency_ms": 902.91,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_refund_arrival",
+      "description": "查询不同渠道退款到账时间",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5226,
+        "prompt_tokens": 4998,
+        "completion_tokens": 228,
+        "estimated_cost_usd": 0.0008864999999999999,
+        "end_to_end_latency_ms": 5932.753000059165,
+        "llm_latency_ms": 4985.423457925208,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_refund_arrival",
+        "turns": [
+          "退款一般多久到账？银行卡和微信一样吗？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "退款的到账时间一般如下：\n\n- **微信/支付宝**：1-3个工作日。\n- **银行卡**：3-7个工作日。\n- **花呗/信用卡分期**：退款会抵扣下期账单。\n\n所以，银行卡和微信的到账时间是不同的，微信通常会更快一些。请根据您选择的支付方式来预估退款到账的时间。",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 5226,
+        "prompt_tokens": 4998,
+        "completion_tokens": 228,
+        "end_to_end_latency_ms": 5932.753,
+        "llm_latency_ms": 4985.423,
+        "tool_latency_ms": 924.117,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_shipping_time",
+      "description": "查询普通现货发货时效",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4948,
+        "prompt_tokens": 4779,
+        "completion_tokens": 169,
+        "estimated_cost_usd": 0.00081825,
+        "end_to_end_latency_ms": 4854.516417020932,
+        "llm_latency_ms": 3786.4384569693357,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": null,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_shipping_time",
+        "turns": [
+          "普通现货下单后多久发货？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "普通现货商品的商家承诺在下单后48小时内出库。如果下单超过72小时仍未发货，您可以联系客服催单或申请未发货退款。希望这个信息对您有帮助！如果还有其他问题，请随时告诉我。",
+        "intent": "order_query",
+        "requires_human": false,
+        "total_tokens": 4948,
+        "prompt_tokens": 4779,
+        "completion_tokens": 169,
+        "end_to_end_latency_ms": 4854.516,
+        "llm_latency_ms": 3786.438,
+        "tool_latency_ms": 1044.572,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_remote_shipping_fee",
+      "description": "查询偏远地区运费",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4032,
+        "prompt_tokens": 3783,
+        "completion_tokens": 249,
+        "estimated_cost_usd": 0.0007168499999999999,
+        "end_to_end_latency_ms": 5676.7251250566915,
+        "llm_latency_ms": 5212.93262403924,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": null,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_remote_shipping_fee",
+        "turns": [
+          "新疆和西藏这些偏远地区包邮吗？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "在新疆和西藏等偏远地区，包邮政策有所不同。具体来说：\n\n- **包邮门槛**：单笔订单满 99 元包邮，不满则收取 8 元基础运费。\n- **偏远地区**：新疆、西藏、青海部分区域不参与全场包邮，需加收 20 元起的运费。\n\n如果您有其他问题或需要进一步的帮助，请随时告诉我！",
+        "intent": "promotion",
+        "requires_human": false,
+        "total_tokens": 4032,
+        "prompt_tokens": 3783,
+        "completion_tokens": 249,
+        "end_to_end_latency_ms": 5676.725,
+        "llm_latency_ms": 5212.933,
+        "tool_latency_ms": 440.485,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_diamond_benefits",
+      "description": "查询钻石会员权益",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4703,
+        "prompt_tokens": 4121,
+        "completion_tokens": 582,
+        "estimated_cost_usd": 0.00096735,
+        "end_to_end_latency_ms": 9088.24850001838,
+        "llm_latency_ms": 7763.895543059334,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_diamond_benefits",
+        "turns": [
+          "钻石会员有哪些权益？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "钻石会员在「并夕夕」平台享有以下权益：\n\n1. **优惠券**：\n   - 每月可获得1张满499元减80元、1张满199元减30元、1张满99元减10元的优惠券。\n\n2. **配送服务**：\n   - 全场包邮（包括偏远地区）。\n   - 优先发货，确保24小时内出库。\n\n3. **退换货服务**：\n   - 每年可享受4次「无忧退」服务，无需任何理由直接退款，运费全免。\n\n4. **客服服务**：\n   - 专属1对1客服经理，提供更优质的服务。\n\n5. **生日特权**：\n   - 生日当月购物可获得双倍积分。\n   - 生日当周可获得一次免费的专属生日礼盒（限钻石会员）。\n   - 生日当天可获得一张88元无门槛券（限黄金及以上会员）。\n\n钻石会员的权益非常丰富，能够为您的购物体验带来更多的便利和实惠！如果您有兴趣加入或了解更多，随时可以问我哦！",
+        "intent": "promotion",
+        "requires_human": false,
+        "total_tokens": 4703,
+        "prompt_tokens": 4121,
+        "completion_tokens": 582,
+        "end_to_end_latency_ms": 9088.249,
+        "llm_latency_ms": 7763.896,
+        "tool_latency_ms": 1303.91,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_points_expiry",
+      "description": "查询会员积分有效期",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5300,
+        "prompt_tokens": 5033,
+        "completion_tokens": 267,
+        "estimated_cost_usd": 0.0009151499999999999,
+        "end_to_end_latency_ms": 6753.701124922372,
+        "llm_latency_ms": 5415.373457944952,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_points_expiry",
+        "turns": [
+          "会员积分会过期吗？多少积分抵一块钱？"
+        ],
+        "route": "presale",
+        "route_source": "rule",
+        "reply": "关于会员积分的相关信息如下：\n\n1. **积分有效期**：积分自获取之日起有效期为24个月，过期后将清零。\n\n2. **积分抵扣比例**：每100积分可以抵扣1元，结账时可以直接使用，单笔订单最多可以抵扣订单金额的50%。\n\n如果您还有其他问题或者需要进一步的帮助，随时告诉我哦！",
+        "intent": "promotion",
+        "requires_human": false,
+        "total_tokens": 5300,
+        "prompt_tokens": 5033,
+        "completion_tokens": 267,
+        "end_to_end_latency_ms": 6753.701,
+        "llm_latency_ms": 5415.373,
+        "tool_latency_ms": 1322.717,
+        "num_llm_calls": 3,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "search_knowledge",
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_forgot_password",
+      "description": "查询忘记密码处理流程",
+      "category": "knowledge",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5158,
+        "prompt_tokens": 4897,
+        "completion_tokens": 261,
+        "estimated_cost_usd": 0.00089115,
+        "end_to_end_latency_ms": 6855.2740419982,
+        "llm_latency_ms": 5877.20441701822,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_forgot_password",
+        "turns": [
+          "我忘记登录密码了，手机号还在，怎么办？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您可以通过登录页面的“忘记密码”选项来重置密码。具体步骤如下：\n\n1. 在登录页面点击“忘记密码”。\n2. 输入您的注册手机号，系统会发送验证码到您的手机。\n3. 根据提示输入验证码，您就可以重置密码了。\n\n如果您的手机号已停用，您需要提供身份证照片和进行人脸认证申诉，审核时间为5个工作日。\n\n如果您还有其他问题，欢迎随时询问！",
+        "intent": "account",
+        "requires_human": false,
+        "total_tokens": 5158,
+        "prompt_tokens": 4897,
+        "completion_tokens": 261,
+        "end_to_end_latency_ms": 6855.274,
+        "llm_latency_ms": 5877.204,
+        "tool_latency_ms": 953.966,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "knowledge_account_stolen",
+      "description": "查询账户被盗处理流程",
+      "category": "knowledge",
+      "passed": false,
+      "failure_reasons": [
+        "tool_efficiency"
+      ],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 0.5,
+        "token_cost": 6254,
+        "prompt_tokens": 5868,
+        "completion_tokens": 386,
+        "estimated_cost_usd": 0.0011118,
+        "end_to_end_latency_ms": 7738.656625035219,
+        "llm_latency_ms": 6302.916749031283,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 0.875
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "knowledge_account_stolen",
+        "turns": [
+          "我的账户可能被盗了，应该立刻做什么？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "如果您的账户可能被盗，建议您立即采取以下措施：\n\n1. **修改密码**：尽快修改您的账户密码，确保新密码强度高且与之前的密码不同。\n\n2. **解绑支付方式**：在账户设置中解绑任何已绑定的支付方式，以防止未授权的交易。\n\n3. **联系客服冻结账户**：请立即联系客服，要求冻结您的账户，以防止进一步的损失。\n\n4. **报警处理**：如果您发现有未授权的交易，请及时报警，并保留报警回执，平台可以协助您追讨资金。\n\n请务必尽快采取这些措施，以保护您的账户安全。如果您需要进一步的帮助，请告诉我！",
+        "intent": "account",
+        "requires_human": true,
+        "total_tokens": 6254,
+        "prompt_tokens": 5868,
+        "completion_tokens": 386,
+        "end_to_end_latency_ms": 7738.657,
+        "llm_latency_ms": 6302.917,
+        "tool_latency_ms": 1414.297,
+        "num_llm_calls": 3,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "search_knowledge",
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "refund_request_confirm_first",
+      "description": "首次退款请求应先查单并确认",
+      "category": "refund",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4329,
+        "prompt_tokens": 3983,
+        "completion_tokens": 346,
+        "estimated_cost_usd": 0.00080505,
+        "end_to_end_latency_ms": 6798.75662503764,
+        "llm_latency_ms": 6775.753790978342,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "refund_request_confirm_first",
+        "turns": [
+          "订单 ORD-20240115-001 的鞋不想要了，我想退款"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "我已查询到您的订单信息：\n\n- **订单号**：ORD-20240115-001\n- **商品**：Nike Air Max 270 运动鞋\n- **数量**：1\n- **价格**：899.0元\n- **订单状态**：已发货\n- **快递公司**：顺丰速运\n- **物流单号**：SF1234567890\n- **预计送达时间**：2024年1月19日\n\n您提到不想要这双鞋，想要退款。请确认一下，您是否确定要申请退款？如果是，请告诉我退款的原因。",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 4329,
+        "prompt_tokens": 3983,
+        "completion_tokens": 346,
+        "end_to_end_latency_ms": 6798.757,
+        "llm_latency_ms": 6775.754,
+        "tool_latency_ms": 0.057,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "refund_confirmed_shipped",
+      "description": "多轮确认后为已发货订单申请退款",
+      "category": "refund",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 9403,
+        "prompt_tokens": 8852,
+        "completion_tokens": 551,
+        "estimated_cost_usd": 0.0016583999999999998,
+        "end_to_end_latency_ms": 9424.826625036076,
+        "llm_latency_ms": 9398.023750982247,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "refund_confirmed_shipped",
+        "turns": [
+          "我要退 ORD-20240115-001，原因是不想要了",
+          "我确认申请退款"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的退款申请已成功提交。以下是相关信息：\n\n- **订单号**：ORD-20240115-001\n- **退款原因**：不想要了\n- **预计审核时间**：1-3 个工作日内完成\n\n届时我们会通知您退货地址。如有其他问题，请随时告诉我！",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 9403,
+        "prompt_tokens": 8852,
+        "completion_tokens": 551,
+        "end_to_end_latency_ms": 9424.827,
+        "llm_latency_ms": 9398.024,
+        "tool_latency_ms": 0.086,
+        "num_llm_calls": 6,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "query_order",
+          "apply_refund"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "refund_confirmed_pending",
+      "description": "多轮确认后取消未发货订单",
+      "category": "refund",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 9339,
+        "prompt_tokens": 8832,
+        "completion_tokens": 507,
+        "estimated_cost_usd": 0.001629,
+        "end_to_end_latency_ms": 8744.560291990638,
+        "llm_latency_ms": 8717.9460831685,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "refund_confirmed_pending",
+        "turns": [
+          "我要取消 ORD-20240120-002，原因是买错了",
+          "确认取消并退款"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单 **ORD-20240120-002** 已成功取消并发起退款，退款原因是“买错了”。退款将在 1-3 个工作日内原路退回。\n\n如果您还有其他问题或需要进一步的帮助，请随时告诉我！",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 9339,
+        "prompt_tokens": 8832,
+        "completion_tokens": 507,
+        "end_to_end_latency_ms": 8744.56,
+        "llm_latency_ms": 8717.946,
+        "tool_latency_ms": 0.116,
+        "num_llm_calls": 6,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "query_order",
+          "apply_refund"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "refund_already_processing",
+      "description": "已有退款申请时不应重复提交",
+      "category": "refund",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 4153,
+        "prompt_tokens": 3973,
+        "completion_tokens": 180,
+        "estimated_cost_usd": 0.00070395,
+        "end_to_end_latency_ms": 3838.9996249461547,
+        "llm_latency_ms": 3817.206208012067,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "refund_already_processing",
+        "turns": [
+          "ORD-20240118-004 已经申请退款了，帮我查进度"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "您的订单 **ORD-20240118-004** 目前退款状态为 **审核中**。您申请退款的原因是 **尺码不合适**。请耐心等待，我们会尽快处理您的退款申请。\n\n如果您有其他问题或需要进一步的帮助，请随时告诉我！",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 4153,
+        "prompt_tokens": 3973,
+        "completion_tokens": 180,
+        "end_to_end_latency_ms": 3839.0,
+        "llm_latency_ms": 3817.206,
+        "tool_latency_ms": 0.065,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "query_order"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "refund_quality_policy",
+      "description": "质量问题退货政策查询",
+      "category": "refund",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5331,
+        "prompt_tokens": 5027,
+        "completion_tokens": 304,
+        "estimated_cost_usd": 0.0009364499999999999,
+        "end_to_end_latency_ms": 6123.75879206229,
+        "llm_latency_ms": 5143.293458968401,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "refund_quality_policy",
+        "turns": [
+          "商品有质量问题想退货，运费谁出，多久能退？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "关于商品质量问题的退货政策如下：\n\n1. **运费承担**：如果商品存在质量问题，运费由「并夕夕」承担。\n2. **退货时效**：您需要在签收后15天内申请退货（包括第15天）。\n3. **退款时效**：退款将在仓库收货并质检通过后，1-3个工作日内原路退回。\n\n如果您需要申请退货，请提供订单号，我可以帮助您查询订单详情并指导您完成退货流程。",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 5331,
+        "prompt_tokens": 5027,
+        "completion_tokens": 304,
+        "end_to_end_latency_ms": 6123.759,
+        "llm_latency_ms": 5143.293,
+        "tool_latency_ms": 955.87,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "refund_reject_package",
+      "description": "查询拒收后退款时效",
+      "category": "refund",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 1.0,
+        "tool_recall": 1.0,
+        "tool_f1": 1.0,
+        "tool_efficiency": 1.0,
+        "token_cost": 5154,
+        "prompt_tokens": 4959,
+        "completion_tokens": 195,
+        "estimated_cost_usd": 0.00086085,
+        "end_to_end_latency_ms": 4959.685417008586,
+        "llm_latency_ms": 4081.861666869372,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "refund_reject_package",
+        "turns": [
+          "快递还没签收，我直接拒收后多久退款？"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "如果您在签收前拒收快递，包裹会原路返回仓库，系统将自动发起退款。这个过程的时效大约为5-7个工作日。退款会在审核通过后按原路退回到您的支付账户。\n\n如果您还有其他问题或需要进一步的帮助，请告诉我！",
+        "intent": "return_request",
+        "requires_human": false,
+        "total_tokens": 5154,
+        "prompt_tokens": 4959,
+        "completion_tokens": 195,
+        "end_to_end_latency_ms": 4959.685,
+        "llm_latency_ms": 4081.862,
+        "tool_latency_ms": 852.976,
+        "num_llm_calls": 3,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "complaint_general_human",
+      "description": "强烈投诉应转人工",
+      "category": "complaint",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": null,
+        "tool_precision": 1.0,
+        "tool_recall": null,
+        "tool_f1": null,
+        "tool_efficiency": 1.0,
+        "token_cost": 2011,
+        "prompt_tokens": 1843,
+        "completion_tokens": 168,
+        "estimated_cost_usd": 0.00037725,
+        "end_to_end_latency_ms": 3072.220041998662,
+        "llm_latency_ms": 3048.7187079852447,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "complaint_general_human",
+        "turns": [
+          "你们这什么破服务！东西质量太差了，我要投诉！必须给我个说法，不然就去消协告你们！"
+        ],
+        "route": "complaint",
+        "route_source": "rule",
+        "reply": "非常抱歉让您感到不满，我理解您的心情。我们非常重视每一位顾客的反馈，您的投诉我会认真处理。\n\n请您提供一下相关的订单号，这样我可以更好地帮助您查询具体情况并给出解决方案。谢谢您的配合！",
+        "intent": "complaint",
+        "requires_human": true,
+        "total_tokens": 2011,
+        "prompt_tokens": 1843,
+        "completion_tokens": 168,
+        "end_to_end_latency_ms": 3072.22,
+        "llm_latency_ms": 3048.719,
+        "tool_latency_ms": 0,
+        "num_llm_calls": 2,
+        "num_tool_calls": 0,
+        "tool_calls": [],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "complaint_order_specific",
+      "description": "带订单号的质量投诉应查单并升级",
+      "category": "complaint",
+      "passed": false,
+      "failure_reasons": [
+        "tool_precision",
+        "tool_efficiency"
+      ],
+      "process": {
+        "tool_accuracy": 1.0,
+        "tool_precision": 0.5,
+        "tool_recall": 1.0,
+        "tool_f1": 0.6666666666666666,
+        "tool_efficiency": 0.5,
+        "token_cost": 4485,
+        "prompt_tokens": 4251,
+        "completion_tokens": 234,
+        "estimated_cost_usd": 0.00077805,
+        "end_to_end_latency_ms": 5670.429959078319,
+        "llm_latency_ms": 4731.509625096805,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 0.75
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "complaint_order_specific",
+        "turns": [
+          "订单 ORD-20240115-001 的鞋质量太差，我要投诉并转人工！"
+        ],
+        "route": "complaint",
+        "route_source": "rule",
+        "reply": "非常抱歉您在订单 ORD-20240115-001 中购买的 Nike Air Max 270 运动鞋质量不符合您的期望。我们非常重视您的反馈。\n\n我已经记录下您的投诉，并建议将此问题转接给人工客服处理，以便更好地为您解决。请稍等，我将为您转接人工客服。",
+        "intent": "complaint",
+        "requires_human": true,
+        "total_tokens": 4485,
+        "prompt_tokens": 4251,
+        "completion_tokens": 234,
+        "end_to_end_latency_ms": 5670.43,
+        "llm_latency_ms": 4731.51,
+        "tool_latency_ms": 914.506,
+        "num_llm_calls": 3,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "query_order",
+          "search_knowledge"
+        ],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "complaint_service_attitude",
+      "description": "客服态度投诉无需业务工具",
+      "category": "complaint",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": null,
+        "tool_precision": 1.0,
+        "tool_recall": null,
+        "tool_f1": null,
+        "tool_efficiency": 1.0,
+        "token_cost": 1933,
+        "prompt_tokens": 1807,
+        "completion_tokens": 126,
+        "estimated_cost_usd": 0.00034665,
+        "end_to_end_latency_ms": 2812.6543330727145,
+        "llm_latency_ms": 2792.585458024405,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "complaint_service_attitude",
+        "turns": [
+          "上一个客服态度很差，我非常不满，请帮我投诉"
+        ],
+        "route": "complaint",
+        "route_source": "rule",
+        "reply": "非常抱歉您遇到了这样的情况，我理解您的不满。为了更好地处理您的投诉，您能否提供一下相关的订单号或更多信息？这样我可以更有效地帮助您。谢谢！",
+        "intent": "complaint",
+        "requires_human": true,
+        "total_tokens": 1933,
+        "prompt_tokens": 1807,
+        "completion_tokens": 126,
+        "end_to_end_latency_ms": 2812.654,
+        "llm_latency_ms": 2792.585,
+        "tool_latency_ms": 0,
+        "num_llm_calls": 2,
+        "num_tool_calls": 0,
+        "tool_calls": [],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "complaint_compensation_demand",
+      "description": "强烈赔偿诉求应升级人工",
+      "category": "complaint",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": null,
+        "tool_precision": 1.0,
+        "tool_recall": null,
+        "tool_f1": null,
+        "tool_efficiency": 1.0,
+        "token_cost": 1922,
+        "prompt_tokens": 1808,
+        "completion_tokens": 114,
+        "estimated_cost_usd": 0.00033959999999999996,
+        "end_to_end_latency_ms": 3037.986541981809,
+        "llm_latency_ms": 3015.3900830773637,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "complaint_compensation_demand",
+        "turns": [
+          "这次体验太差了，我很生气，要求赔偿并立刻转人工"
+        ],
+        "route": "complaint",
+        "route_source": "rule",
+        "reply": "非常抱歉让您感到不满，我理解您的愤怒。为了更好地处理您的问题，我建议转接人工客服处理，我将为您转接。请稍等片刻。",
+        "intent": "complaint",
+        "requires_human": true,
+        "total_tokens": 1922,
+        "prompt_tokens": 1808,
+        "completion_tokens": 114,
+        "end_to_end_latency_ms": 3037.987,
+        "llm_latency_ms": 3015.39,
+        "tool_latency_ms": 0,
+        "num_llm_calls": 2,
+        "num_tool_calls": 0,
+        "tool_calls": [],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "general_greeting_no_tool",
+      "description": "纯问候不应调用工具",
+      "category": "general",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": null,
+        "tool_precision": 1.0,
+        "tool_recall": null,
+        "tool_f1": null,
+        "tool_efficiency": 1.0,
+        "token_cost": 2192,
+        "prompt_tokens": 2146,
+        "completion_tokens": 46,
+        "estimated_cost_usd": 0.0003495,
+        "end_to_end_latency_ms": 2170.5570420017466,
+        "llm_latency_ms": 2149.730916018598,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": null,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "general_greeting_no_tool",
+        "turns": [
+          "你好呀"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "你好！有什么我可以帮助你的吗？",
+        "intent": "greeting",
+        "requires_human": false,
+        "total_tokens": 2192,
+        "prompt_tokens": 2146,
+        "completion_tokens": 46,
+        "end_to_end_latency_ms": 2170.557,
+        "llm_latency_ms": 2149.731,
+        "tool_latency_ms": 0,
+        "num_llm_calls": 2,
+        "num_tool_calls": 0,
+        "tool_calls": [],
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "general_thanks_no_tool",
+      "description": "用户致谢不应调用工具",
+      "category": "general",
+      "passed": true,
+      "failure_reasons": [],
+      "process": {
+        "tool_accuracy": null,
+        "tool_precision": 1.0,
+        "tool_recall": null,
+        "tool_f1": null,
+        "tool_efficiency": 1.0,
+        "token_cost": 2224,
+        "prompt_tokens": 2158,
+        "completion_tokens": 66,
+        "estimated_cost_usd": 0.0003633,
+        "end_to_end_latency_ms": 2404.4264579424635,
+        "llm_latency_ms": 2382.396250963211,
+        "token_pass": true,
+        "process_soundness": null,
+        "route_match": 1.0,
+        "process_score": 1.0
+      },
+      "result": {
+        "intent_match": 1.0,
+        "keyword_coverage": null,
+        "requires_human_match": 1.0,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "trace": {
+        "case_id": "general_thanks_no_tool",
+        "turns": [
+          "好的，谢谢你！"
+        ],
+        "route": "postsale",
+        "route_source": "rule",
+        "reply": "不客气！如果你有任何问题或者需要帮助，随时告诉我哦！",
+        "intent": "greeting",
+        "requires_human": false,
+        "total_tokens": 2224,
+        "prompt_tokens": 2158,
+        "completion_tokens": 66,
+        "end_to_end_latency_ms": 2404.426,
+        "llm_latency_ms": 2382.396,
+        "tool_latency_ms": 0,
+        "num_llm_calls": 2,
+        "num_tool_calls": 0,
+        "tool_calls": [],
+        "error": null
+      },
+      "error": null
+    }
+  ]
+}

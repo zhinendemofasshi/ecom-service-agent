@@ -123,18 +123,18 @@ class SkillManager:
 
         lines = [
             "\n\n## 可用技能（Skills）",
-            "以下是你可以使用的专业技能。当用户的问题匹配某个技能的适用场景时，",
-            "调用 `load_skill` 工具加载该技能的详细指令，然后按指令流程处理。\n",
+            "以下技能仅用于当前系统提示不足以覆盖的复杂、多步骤任务。",
+            "简单查询应直接使用业务工具，不要仅因关键词匹配就加载技能。\n",
         ]
 
         for skill in self._skills.values():
             lines.append(f"- **{skill.name}**：{skill.description}")
 
         lines.append("\n### 技能使用方式")
-        lines.append("1. 判断用户问题是否匹配某个技能的描述")
-        lines.append('2. 如果匹配，调用 `load_skill(skill_name="技能名")` 加载完整指令')
-        lines.append("3. 按加载的指令流程处理用户问题，使用已有工具完成具体操作")
-        lines.append("4. 如果不匹配任何技能，照常回答即可，不必强行使用技能")
+        lines.append("1. 先判断现有系统规则和一个直接业务工具能否完成任务")
+        lines.append("2. 仅在确实需要复杂流程时加载最相关的一个技能")
+        lines.append("3. 同一会话不得重复加载同一技能")
+        lines.append("4. 加载后按指令处理；不需要技能时直接完成任务")
 
         return "\n".join(lines)
 

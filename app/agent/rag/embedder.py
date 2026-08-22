@@ -42,3 +42,6 @@ class Embedder:
 
     def encode_one(self, text: str) -> list[float]:
         return self.encode([text])[0]
+
+    def close(self) -> None:
+        self._client.close()
