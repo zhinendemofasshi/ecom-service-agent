@@ -56,9 +56,13 @@ python main.py
 
 **开启进阶能力**（可选，改 `.env` 后重启即可）：
 
+- `AGENT_RUNTIME=langgraph` —— 默认使用 LangGraph + Responses API；设置为 `legacy` 可回退旧 ReAct 循环
+- `HITL_ENABLED=true` —— `apply_refund` 执行前持久化暂停，输入 `approve` / `reject` 恢复
 - `MULTI_AGENT_ENABLED=true` —— 多 Agent 协作（售前/售后/投诉分流）
 - `MCP_ENABLED=true` —— 通过 MCP 协议调用工具（需另起 `python mcp_server/server.py`）
 - `RAG_BACKEND=chroma` —— 换用 Chroma 向量数据库（需 `pip install chromadb`）
+
+LangGraph checkpoint 默认写入 `app/sessions/langgraph-checkpoints.sqlite`，用于在进程重启后恢复待审核操作。SQLite 适合本地开发；多实例生产部署应替换为共享的 PostgreSQL checkpointer。当前 LangGraph runtime 先覆盖单 Agent 模式，开启 `MULTI_AGENT_ENABLED` 时仍使用原有 Multi-Agent orchestrator。
 
 **跑评估 & 测试**：
 

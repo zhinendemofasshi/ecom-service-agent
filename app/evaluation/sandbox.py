@@ -151,6 +151,11 @@ class Sandbox:
         patches.append((beta_completions, "parse", beta_completions.parse))
         beta_completions.parse = self._wrap_parse(beta_completions.parse, trace)
 
+        # LangGraph runtime uses Responses API for the model/tool loop.
+        responses = agent.client.responses
+        patches.append((responses, "create", responses.create))
+        responses.create = self._wrap_responses_create(responses.create, trace)
+
         # 2) 工具执行
         for tm in self._tool_managers(agent):
             patches.append((tm, "execute_tool", tm.execute_tool))
@@ -179,6 +184,32 @@ class Sandbox:
             response = original(*args, **kwargs)
             latency_ms = (time.perf_counter() - start) * 1000
             self._record_llm_call(trace, response, latency_ms, purpose="extract")
+            return response
+        return wrapper
+
+    def _wrap_responses_create(self, original, trace: RunTrace):
+        def wrapper(*args, **kwargs):
+            start = time.perf_counter()
+            response = original(*args, **kwargs)
+            latency_ms = (time.perf_counter() - start) * 1000
+            usage = getattr(response, "usage", None)
+            tool_calls = [
+                {
+                    "name": item.name,
+                    "arguments": item.arguments,
+                }
+                for item in (getattr(response, "output", None) or [])
+                if getattr(item, "type", None) == "function_call"
+            ]
+            trace.llm_calls.append(LLMCallRecord(
+                purpose="react",
+                model=getattr(response, "model", "") or "",
+                prompt_tokens=getattr(usage, "input_tokens", 0) or 0,
+                completion_tokens=getattr(usage, "output_tokens", 0) or 0,
+                total_tokens=getattr(usage, "total_tokens", 0) or 0,
+                tool_calls=tool_calls,
+                latency_ms=latency_ms,
+            ))
             return response
         return wrapper
 

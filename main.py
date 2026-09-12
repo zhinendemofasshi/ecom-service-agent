@@ -23,12 +23,18 @@ def main():
         mode = "Multi-Agent 协作模式"
     else:
         agent = EcomAgent()
-        mode = "ReAct + MCP + RAG"
+        mode = (
+            "LangGraph + Responses API + HITL"
+            if agent.runtime_name == "langgraph"
+            else "Legacy ReAct + MCP + RAG"
+        )
 
     print("=" * 50)
     print(f"  并夕夕 · 智能客服「小夕」({mode})")
     print("  支持工具调用 + 政策检索 + 用户记忆 + 技能编排")
     print("  输入 quit/exit 退出, reset 重置, memory 查看记忆, skills 查看技能")
+    if getattr(agent, "runtime_name", None) == "langgraph":
+        print("  敏感操作暂停后输入 approve 批准，或 reject 拒绝")
     print("=" * 50)
     print()
 
@@ -92,6 +98,22 @@ def main():
                 print()
             else:
                 print("记忆功能未启用\n")
+            continue
+
+        if user_input.lower() in ("approve", "批准", "同意"):
+            try:
+                response = agent.resume_approval(True)
+                print(f"\n🤖 小夕: {response.reply}\n")
+            except (AttributeError, RuntimeError) as e:
+                print(f"\n⚠️  {e}\n")
+            continue
+
+        if user_input.lower() in ("reject", "拒绝", "不同意"):
+            try:
+                response = agent.resume_approval(False)
+                print(f"\n🤖 小夕: {response.reply}\n")
+            except (AttributeError, RuntimeError) as e:
+                print(f"\n⚠️  {e}\n")
             continue
 
         try:

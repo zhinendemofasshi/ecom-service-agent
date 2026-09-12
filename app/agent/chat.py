@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Optional
 
 from openai import OpenAI
@@ -42,6 +43,7 @@ class EcomAgent:
         self.history_threshold = settings.history_threshold
         self.history_keep_recent = settings.history_keep_recent
         self.max_react_steps = settings.max_react_steps
+        self.runtime_name = settings.agent_runtime
 
         effective_mcp_enabled = settings.mcp_enabled if mcp_enabled is None else mcp_enabled
         effective_memory_enabled = (
@@ -79,6 +81,22 @@ class EcomAgent:
             from app.agent.tools.skill_tool import set_skill_manager
             set_skill_manager(self.skill_manager)
 
+        self.graph_runtime = None
+        if self.runtime_name == "langgraph":
+            from app.agent.langgraph_runtime import LangGraphAgentRuntime
+            self.graph_runtime = LangGraphAgentRuntime(
+                client=self.client,
+                model=self.model,
+                temperature=self.temperature,
+                tool_manager=self.tool_manager,
+                max_steps=self.max_react_steps,
+                checkpoint_path=settings.langgraph_checkpoint_path,
+                thread_key=str(Path(self.session_path).resolve()),
+                hitl_enabled=settings.hitl_enabled,
+            )
+        elif self.runtime_name != "legacy":
+            raise ValueError("AGENT_RUNTIME 必须是 'langgraph' 或 'legacy'")
+
         self.raw_messages: list[dict] = []
         self.summary: Optional[str] = None
 
@@ -95,9 +113,58 @@ class EcomAgent:
 
     def chat(self, user_input: str) -> CustomerServiceResponse:
         """处理用户输入：ReAct 循环 → 结构化提取 → 返回结果"""
+        if self.has_pending_approval:
+            return self._pending_approval_response()
+
         self.raw_messages.append({"role": "user", "content": user_input})
 
-        final_text = self._react_loop()
+        if self.graph_runtime is not None:
+            graph_result = self.graph_runtime.invoke(self._build_messages())
+            if graph_result.get("__interrupt__"):
+                save_session(
+                    self.session_path, self.raw_messages, self.summary,
+                    short_term_memory=self.memory_manager.stm_to_dict(),
+                )
+                return self._pending_approval_response()
+            final_text = graph_result.get("final_text", "")
+            self._append_graph_messages(graph_result)
+        else:
+            final_text = self._react_loop()
+
+        return self._finish_chat(final_text)
+
+    @property
+    def has_pending_approval(self) -> bool:
+        return bool(
+            self.graph_runtime is not None
+            and self.graph_runtime.has_pending_interrupt()
+        )
+
+    def resume_approval(
+        self,
+        approved: bool,
+        *,
+        arguments: Optional[dict] = None,
+        message: Optional[str] = None,
+    ) -> CustomerServiceResponse:
+        """Resume a graph paused before a sensitive tool call."""
+        if not self.has_pending_approval or self.graph_runtime is None:
+            raise RuntimeError("当前没有待审核操作")
+        if arguments is not None:
+            decision = {"type": "edit", "arguments": arguments}
+        elif approved:
+            decision = {"type": "approve"}
+        else:
+            decision = {"type": "reject", "message": message or "用户拒绝了该操作"}
+        graph_result = self.graph_runtime.resume([decision])
+        if graph_result.get("__interrupt__"):
+            return self._pending_approval_response()
+        final_text = graph_result.get("final_text", "")
+        self._append_graph_messages(graph_result)
+        return self._finish_chat(final_text)
+
+    def _finish_chat(self, final_text: str) -> CustomerServiceResponse:
+        """Apply the existing response, memory, compression, and persistence path."""
 
         result = self._extract_structured_response(final_text)
 
@@ -116,10 +183,48 @@ class EcomAgent:
         )
         return result
 
+    def _append_graph_messages(self, graph_result: dict) -> None:
+        """Persist graph output in the legacy message format used by memory/evals."""
+        for item in graph_result.get("tool_history", []):
+            self.raw_messages.append({
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [{
+                    "id": item["call_id"],
+                    "type": "function",
+                    "function": {
+                        "name": item["name"],
+                        "arguments": item["arguments"],
+                    },
+                }],
+            })
+            self.raw_messages.append({
+                "role": "tool",
+                "tool_call_id": item["call_id"],
+                "content": item["output"],
+            })
+        if graph_result.get("final_text"):
+            self.raw_messages.append({
+                "role": "assistant",
+                "content": graph_result["final_text"],
+            })
+
+    @staticmethod
+    def _pending_approval_response() -> CustomerServiceResponse:
+        return CustomerServiceResponse(
+            intent=IntentType.RETURN_REQUEST,
+            confidence=1.0,
+            reply="退款申请已准备好，执行前需要人工确认。请输入 approve 批准或 reject 拒绝。",
+            requires_human=True,
+            follow_up_question="是否批准执行退款操作？",
+        )
+
     def reset(self):
         self.raw_messages = []
         self.summary = None
         self.memory_manager.reset_short_term()
+        if self.graph_runtime is not None:
+            self.graph_runtime.reset()
         delete_session(self.session_path)
 
     def save(self) -> None:
@@ -130,6 +235,8 @@ class EcomAgent:
 
     def close(self):
         self.memory_manager.consolidate_to_long_term(self.raw_messages, self.summary)
+        if self.graph_runtime is not None:
+            self.graph_runtime.close()
         self.tool_manager.close()
 
     def _react_loop(self) -> str:

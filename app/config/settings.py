@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     model_name: str = "gpt-4o-mini"
     temperature: float = 0.7
 
+    # Agent 执行层：LangGraph + Responses API 为默认；legacy 保留回滚路径。
+    agent_runtime: str = "langgraph"
+    langgraph_checkpoint_path: str = "app/sessions/langgraph-checkpoints.sqlite"
+    hitl_enabled: bool = True
+
     # ReAct 循环
     max_react_steps: int = 5
 
