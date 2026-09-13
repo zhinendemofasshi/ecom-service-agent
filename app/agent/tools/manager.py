@@ -19,10 +19,15 @@ class ToolManager:
         use_mcp: bool = False,
         mcp_server_url: str = "",
         allowed_tools: Optional[set] = None,
+        config=None,
     ):
+        from app.config.settings import settings
+        self.config = config or settings
         self._mcp_client = None
         self._tool_source: dict[str, str] = {}
         self._tool_defs: list[dict] = []
+        self._memory_manager = None
+        self._skill_manager = None
 
         if use_mcp and mcp_server_url:
             self._init_mcp(mcp_server_url)
@@ -82,20 +87,82 @@ class ToolManager:
     def tool_definitions(self) -> list[dict]:
         return self._tool_defs
 
-    def execute_tool(self, name: str, arguments: dict) -> str:
+    def execute_tool(self, name: str, arguments: dict, context=None) -> str:
         """根据工具来源分发调用。"""
         source = self._tool_source.get(name)
+
+        if name == "recall_user_memory":
+            if self._memory_manager is None or not self._memory_manager.memory_enabled:
+                return json.dumps({"success": False, "error_code": "memory_disabled", "error": "记忆系统未启用"}, ensure_ascii=False)
+            memory = self._memory_manager
+            result = {
+                "success": True,
+                "short_term_facts": memory.stm.facts,
+                "long_term_facts": [
+                    {"content": fact.content, "category": fact.category}
+                    for fact in memory.ltm.facts
+                ],
+                "recent_interactions": [
+                    item["summary"] for item in memory.ltm.interaction_summaries[-3:]
+                ],
+            }
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "load_skill":
+            if self._skill_manager is None:
+                return json.dumps({"success": False, "error_code": "skills_disabled", "error": "技能系统未启用"}, ensure_ascii=False)
+            return json.dumps(
+                self._skill_manager.load_skill(arguments.get("skill_name", "")),
+                ensure_ascii=False,
+            )
+
+        if name == "apply_refund":
+            return local_execute_tool(name, arguments, context, config=self.config)
 
         if source == "mcp" and self._mcp_client:
             return self._mcp_client.call_tool(name, arguments)
 
         if source == "local":
-            return local_execute_tool(name, arguments)
+            return local_execute_tool(name, arguments, context, config=self.config)
 
-        return json.dumps({"error": f"未知工具: {name}"}, ensure_ascii=False)
+        return json.dumps({"success": False, "error_code": "unknown_tool", "error": f"未知工具: {name}"}, ensure_ascii=False)
+
+    def bind_agent_context(self, *, memory_manager=None, skill_manager=None) -> None:
+        """Bind session-scoped dependencies without process globals."""
+        self._memory_manager = memory_manager
+        self._skill_manager = skill_manager
 
     def close(self):
         """清理 MCP 连接。"""
         if self._mcp_client:
             self._mcp_client.close()
             self._mcp_client = None
+
+    def audit_tool_decision(self, name: str, arguments: dict, context, decision: str) -> None:
+        if name != "apply_refund":
+            return
+        from app.agent.tools.refund import record_refund_decision
+        settings = self.config
+        record_refund_decision(
+            db_path=settings.refund_store,
+            idempotency_key=context.idempotency_key,
+            tenant_id=context.tenant_id,
+            user_id=context.user_id,
+            order_id=str(arguments.get("order_id", "")),
+            reason=str(arguments.get("reason", "")),
+            decision=decision,
+            approver_ids=settings.refund_approver_ids,
+            actor_id=context.approved_by,
+        )
+
+    def register_tool_approval(self, name, arguments, context, timeout_seconds):
+        if name != "apply_refund":
+            return
+        from app.agent.tools.refund import register_refund_approval
+        settings = self.config
+        register_refund_approval(
+            db_path=settings.refund_store, idempotency_key=context.idempotency_key,
+            tenant_id=context.tenant_id, user_id=context.user_id,
+            order_id=str(arguments.get("order_id", "")), reason=str(arguments.get("reason", "")),
+            timeout_seconds=timeout_seconds,
+        )

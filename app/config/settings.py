@@ -12,7 +12,35 @@ class Settings(BaseSettings):
     # Agent 执行层：LangGraph + Responses API 为默认；legacy 保留回滚路径。
     agent_runtime: str = "langgraph"
     langgraph_checkpoint_path: str = "app/sessions/langgraph-checkpoints.sqlite"
+    checkpoint_backend: str = "sqlite"
+    database_url: str = ""
+    checkpoint_retention_days: int = 30
+    checkpoint_cleanup_interval_seconds: int = 3600
+    abandoned_run_seconds: int = 300
     hitl_enabled: bool = True
+    approval_timeout_seconds: int = 86_400
+
+    # Tool execution reliability.
+    tool_timeout_seconds: float = 10.0
+    tool_max_retries: int = 2
+    tool_circuit_failure_threshold: int = 3
+    tool_circuit_recovery_seconds: float = 30.0
+    tool_max_input_bytes: int = 64_000
+    tool_max_output_bytes: int = 1_000_000
+
+    # API/auth and durable refund audit storage.
+    # Opaque login tokens provisioned by the trusted identity service.
+    auth_tokens: dict[str, dict] = {}
+    trusted_identity_headers: bool = False
+    refund_approver_ids: list[str] = []
+    service_api_key: str = "change-me"
+    approver_api_key: str = "change-me-approver"
+    admin_api_key: str = "change-me-admin"
+    refund_db_path: str = "app/sessions/refunds.sqlite"
+    max_refund_amount: float = 10_000.0
+    max_refunds_per_user_per_day: int = 5
+    api_session_db_path: str = "app/sessions/api-sessions.sqlite"
+    max_concurrent_runs: int = 32
 
     # ReAct 循环
     max_react_steps: int = 5
@@ -59,6 +87,18 @@ class Settings(BaseSettings):
     session_path: str = "app/sessions/session.json"
     history_threshold: int = 10  # 消息压缩策略通常为上下文达到一定的token数，例如claude code通常为达到最大上下文窗口的70%左右，此处简略为原始消息条数超过10轮
     history_keep_recent: int = 3  # 压缩时保留最近 3 条原始消息
+
+    @property
+    def state_database_url(self) -> str:
+        if self.checkpoint_backend == "postgres":
+            if not self.database_url:
+                raise ValueError("PostgreSQL 模式必须配置 DATABASE_URL")
+            return self.database_url
+        return ""
+
+    @property
+    def refund_store(self) -> str:
+        return self.state_database_url or self.refund_db_path
 
     model_config = {"env_file": ".env"}
 

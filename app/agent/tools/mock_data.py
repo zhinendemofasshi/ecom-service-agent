@@ -4,6 +4,8 @@ ORDERS = {
     "ORD-20240115-001": {
         "order_id": "ORD-20240115-001",
         "user": "小明",
+        "user_id": "user-xiaoming",
+        "tenant_id": "tenant-a",
         "status": "shipped",
         "items": [
             {"name": "Nike Air Max 270 运动鞋", "sku": "SHOE-270-BK-42", "quantity": 1, "price": 899.00}
@@ -18,6 +20,8 @@ ORDERS = {
     "ORD-20240120-002": {
         "order_id": "ORD-20240120-002",
         "user": "小红",
+        "user_id": "user-xiaohong",
+        "tenant_id": "tenant-a",
         "status": "pending",
         "items": [
             {"name": "Apple AirPods Pro 2", "sku": "ELEC-APP-002", "quantity": 1, "price": 1799.00},
@@ -33,6 +37,8 @@ ORDERS = {
     "ORD-20240110-003": {
         "order_id": "ORD-20240110-003",
         "user": "大壮",
+        "user_id": "user-dazhuang",
+        "tenant_id": "tenant-a",
         "status": "delivered",
         "items": [
             {"name": "小米14 Ultra 手机", "sku": "PHONE-MI14U-BK", "quantity": 1, "price": 5999.00}
@@ -48,6 +54,8 @@ ORDERS = {
     "ORD-20240118-004": {
         "order_id": "ORD-20240118-004",
         "user": "小丽",
+        "user_id": "user-xiaoli",
+        "tenant_id": "tenant-a",
         "status": "refund_processing",
         "items": [
             {"name": "Levi's 501 经典牛仔裤", "sku": "CLOTH-LEVI-501-30", "quantity": 1, "price": 699.00}
@@ -66,6 +74,8 @@ ORDERS = {
     "ORD-20240122-005": {
         "order_id": "ORD-20240122-005",
         "user": "阿杰",
+        "user_id": "user-ajie",
+        "tenant_id": "tenant-a",
         "status": "pending",
         "items": [
             {"name": "戴森 V15 吸尘器", "sku": "HOME-DYSON-V15", "quantity": 1, "price": 4299.00},

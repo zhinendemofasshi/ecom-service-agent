@@ -1,6 +1,8 @@
 import json
+from hashlib import sha256
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
+from uuid import uuid4
 
 from openai import OpenAI
 
@@ -26,6 +28,11 @@ class EcomAgent:
         mcp_enabled: Optional[bool] = None,
         skills_enabled: Optional[bool] = None,
         temperature: Optional[float] = None,
+        tenant_id: str = "local",
+        user_id: Optional[str] = None,
+        event_sink: Optional[Callable[[dict], None]] = None,
+        checkpoint_store=None,
+        config=None,
     ):
         """Create the agent.
 
@@ -33,6 +40,8 @@ class EcomAgent:
         evaluation sandbox.  They avoid mutating the process-wide ``settings``
         singleton while an isolated case is being constructed.
         """
+        settings = config or globals()["settings"]
+        self.config = settings
         self.client = client or OpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
@@ -44,6 +53,13 @@ class EcomAgent:
         self.history_keep_recent = settings.history_keep_recent
         self.max_react_steps = settings.max_react_steps
         self.runtime_name = settings.agent_runtime
+        self.tenant_id = tenant_id
+        self.user_id = user_id or settings.memory_user_id
+        self.event_sink = event_sink
+        self._storage_options = {
+            "database_url": settings.state_database_url,
+            "storage_key": json.dumps([self.tenant_id, self.user_id, str(Path(self.session_path).resolve())]),
+        }
 
         effective_mcp_enabled = settings.mcp_enabled if mcp_enabled is None else mcp_enabled
         effective_memory_enabled = (
@@ -54,6 +70,7 @@ class EcomAgent:
         )
 
         self.tool_manager = ToolManager(
+            config=settings,
             use_mcp=effective_mcp_enabled,
             mcp_server_url=settings.mcp_server_url,
         )
@@ -62,10 +79,13 @@ class EcomAgent:
         self.memory_manager = MemoryManager(
             client=self.client,
             model=self.model,
-            user_id=settings.memory_user_id,
-            memory_dir=settings.memory_dir,
+            user_id=self.user_id,
+            memory_dir=(str(Path(settings.memory_dir) / sha256(tenant_id.encode()).hexdigest())
+                        if tenant_id != "local" else settings.memory_dir),
             memory_enabled=effective_memory_enabled,
             max_ltm_facts=settings.max_ltm_facts,
+            database_url=settings.state_database_url,
+            tenant_id=self.tenant_id,
         )
 
         if effective_memory_enabled:
@@ -81,6 +101,11 @@ class EcomAgent:
             from app.agent.tools.skill_tool import set_skill_manager
             set_skill_manager(self.skill_manager)
 
+        self.tool_manager.bind_agent_context(
+            memory_manager=self.memory_manager,
+            skill_manager=self.skill_manager,
+        )
+
         self.graph_runtime = None
         if self.runtime_name == "langgraph":
             from app.agent.langgraph_runtime import LangGraphAgentRuntime
@@ -93,6 +118,14 @@ class EcomAgent:
                 checkpoint_path=settings.langgraph_checkpoint_path,
                 thread_key=str(Path(self.session_path).resolve()),
                 hitl_enabled=settings.hitl_enabled,
+                checkpoint_backend=settings.checkpoint_backend,
+                database_url=settings.database_url,
+                tenant_id=self.tenant_id,
+                user_id=self.user_id,
+                event_sink=self.event_sink,
+                tool_policy=self._tool_policy(),
+                approval_timeout_seconds=settings.approval_timeout_seconds,
+                checkpoint_store=checkpoint_store,
             )
         elif self.runtime_name != "legacy":
             raise ValueError("AGENT_RUNTIME 必须是 'langgraph' 或 'legacy'")
@@ -100,7 +133,7 @@ class EcomAgent:
         self.raw_messages: list[dict] = []
         self.summary: Optional[str] = None
 
-        loaded = load_session(self.session_path)
+        loaded = load_session(self.session_path, **self._storage_options)
         if loaded:
             self.summary = loaded["summary"]
             self.raw_messages = loaded["messages"]
@@ -111,7 +144,24 @@ class EcomAgent:
     def history_size(self) -> int:
         return len(self.raw_messages)
 
-    def chat(self, user_input: str) -> CustomerServiceResponse:
+    def reload_state(self):
+        """Called under the shared user lock before a different API worker runs."""
+        loaded = load_session(self.session_path, **self._storage_options)
+        self.raw_messages = loaded.get("messages", []) if loaded else []
+        self.summary = loaded.get("summary") if loaded else None
+        self.memory_manager.reset_short_term()
+        if loaded and loaded.get("short_term_memory"):
+            self.memory_manager.restore_stm(loaded["short_term_memory"])
+        if self.memory_manager.memory_enabled:
+            self.memory_manager.ltm.load()
+
+    def chat(
+        self,
+        user_input: str,
+        *,
+        request_id: str = "",
+        cancel_check: Optional[Callable[[], bool]] = None,
+    ) -> CustomerServiceResponse:
         """处理用户输入：ReAct 循环 → 结构化提取 → 返回结果"""
         if self.has_pending_approval:
             return self._pending_approval_response()
@@ -119,11 +169,15 @@ class EcomAgent:
         self.raw_messages.append({"role": "user", "content": user_input})
 
         if self.graph_runtime is not None:
-            graph_result = self.graph_runtime.invoke(self._build_messages())
+            graph_result = self.graph_runtime.invoke(
+                self._build_messages(),
+                request_id=request_id or str(uuid4()),
+                cancel_check=cancel_check,
+            )
             if graph_result.get("__interrupt__"):
                 save_session(
                     self.session_path, self.raw_messages, self.summary,
-                    short_term_memory=self.memory_manager.stm_to_dict(),
+                    short_term_memory=self.memory_manager.stm_to_dict(), **self._storage_options,
                 )
                 return self._pending_approval_response()
             final_text = graph_result.get("final_text", "")
@@ -140,22 +194,37 @@ class EcomAgent:
             and self.graph_runtime.has_pending_interrupt()
         )
 
+    def cancel_pending_approval(self, actor_id: str) -> None:
+        if self.graph_runtime is None:
+            raise RuntimeError("当前没有待审核操作")
+        self.graph_runtime.cancel_pending(actor_id)
+        self.save()
+
     def resume_approval(
         self,
         approved: bool,
         *,
         arguments: Optional[dict] = None,
         message: Optional[str] = None,
+        approved_by: str = "",
     ) -> CustomerServiceResponse:
         """Resume a graph paused before a sensitive tool call."""
         if not self.has_pending_approval or self.graph_runtime is None:
             raise RuntimeError("当前没有待审核操作")
         if arguments is not None:
-            decision = {"type": "edit", "arguments": arguments}
+            decision = {
+                "type": "edit",
+                "arguments": arguments,
+                "approved_by": approved_by or self.user_id,
+            }
         elif approved:
-            decision = {"type": "approve"}
+            decision = {"type": "approve", "approved_by": approved_by or self.user_id}
         else:
-            decision = {"type": "reject", "message": message or "用户拒绝了该操作"}
+            decision = {
+                "type": "reject",
+                "message": message or "用户拒绝了该操作",
+                "approved_by": approved_by or self.user_id,
+            }
         graph_result = self.graph_runtime.resume([decision])
         if graph_result.get("__interrupt__"):
             return self._pending_approval_response()
@@ -179,9 +248,26 @@ class EcomAgent:
 
         save_session(
             self.session_path, self.raw_messages, self.summary,
-            short_term_memory=self.memory_manager.stm_to_dict(),
+            short_term_memory=self.memory_manager.stm_to_dict(), **self._storage_options,
         )
+        if self.event_sink:
+            self.event_sink({
+                "type": "run_completed",
+                "response": result.model_dump(mode="json"),
+            })
         return result
+
+    def _tool_policy(self):
+        settings = self.config
+        from app.agent.tools.executor import ToolPolicy
+        return ToolPolicy(
+            timeout_seconds=settings.tool_timeout_seconds,
+            max_retries=settings.tool_max_retries,
+            failure_threshold=settings.tool_circuit_failure_threshold,
+            recovery_seconds=settings.tool_circuit_recovery_seconds,
+            max_input_bytes=settings.tool_max_input_bytes,
+            max_output_bytes=settings.tool_max_output_bytes,
+        )
 
     def _append_graph_messages(self, graph_result: dict) -> None:
         """Persist graph output in the legacy message format used by memory/evals."""
@@ -225,12 +311,12 @@ class EcomAgent:
         self.memory_manager.reset_short_term()
         if self.graph_runtime is not None:
             self.graph_runtime.reset()
-        delete_session(self.session_path)
+        delete_session(self.session_path, **self._storage_options)
 
     def save(self) -> None:
         save_session(
             self.session_path, self.raw_messages, self.summary,
-            short_term_memory=self.memory_manager.stm_to_dict(),
+            short_term_memory=self.memory_manager.stm_to_dict(), **self._storage_options,
         )
 
     def close(self):

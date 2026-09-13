@@ -35,7 +35,11 @@ class LongTermMemory:
         user_id: str = "default",
         memory_dir: str = "app/sessions/memory",
         max_facts: int = 50,
+        database_url: str = "",
+        tenant_id: str = "local",
     ):
+        self.database_url = database_url
+        self.document_key = json.dumps([tenant_id, user_id])
         self.user_id = user_id
         self.memory_dir = Path(memory_dir)
         self.max_facts = max_facts
@@ -48,13 +52,19 @@ class LongTermMemory:
 
     def load(self) -> None:
         """从 JSON 文件加载用户的长期记忆。"""
-        if not self.memory_path.exists():
-            return
-        try:
-            with self.memory_path.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            return
+        self.facts = []
+        self.interaction_summaries = []
+        if self.database_url:
+            from app.agent import document_store
+            data = document_store.load(self.database_url, "memory", self.document_key) or {}
+        else:
+            if not self.memory_path.exists():
+                return
+            try:
+                with self.memory_path.open("r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                return
 
         for item in data.get("facts", []):
             self.facts.append(MemoryFact(
@@ -67,8 +77,6 @@ class LongTermMemory:
 
     def save(self) -> None:
         """持久化到 JSON 文件（原子写入）。"""
-        self.memory_dir.mkdir(parents=True, exist_ok=True)
-
         payload = {
             "version": 1,
             "user_id": self.user_id,
@@ -77,6 +85,11 @@ class LongTermMemory:
             "interaction_summaries": self.interaction_summaries,
         }
 
+        if self.database_url:
+            from app.agent import document_store
+            document_store.save(self.database_url, "memory", self.document_key, payload)
+            return
+        self.memory_dir.mkdir(parents=True, exist_ok=True)
         tmp_path = self.memory_path.with_suffix(".json.tmp")
         with tmp_path.open("w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -144,5 +157,8 @@ class LongTermMemory:
         """清空该用户的长期记忆（文件也删除）。"""
         self.facts = []
         self.interaction_summaries = []
-        if self.memory_path.exists():
+        if self.database_url:
+            from app.agent import document_store
+            document_store.delete(self.database_url, "memory", self.document_key)
+        elif self.memory_path.exists():
             self.memory_path.unlink()

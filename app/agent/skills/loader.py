@@ -132,7 +132,7 @@ class SkillManager:
 
         lines.append("\n### 技能使用方式")
         lines.append("1. 先判断现有系统规则和一个直接业务工具能否完成任务")
-        lines.append("2. 仅在确实需要复杂流程时加载最相关的一个技能")
+        lines.append("2. 仅在确实需要复杂流程时调用 load_skill 加载最相关的一个技能")
         lines.append("3. 同一会话不得重复加载同一技能")
         lines.append("4. 加载后按指令处理；不需要技能时直接完成任务")
 

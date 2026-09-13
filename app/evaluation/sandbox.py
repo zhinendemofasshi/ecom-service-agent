@@ -214,9 +214,9 @@ class Sandbox:
         return wrapper
 
     def _wrap_execute_tool(self, original, trace: RunTrace):
-        def wrapper(name: str, arguments: dict) -> str:
+        def wrapper(name: str, arguments: dict, context=None) -> str:
             start = time.perf_counter()
-            result_str = original(name, arguments)
+            result_str = original(name, arguments, context)
             latency_ms = (time.perf_counter() - start) * 1000
             trace.tool_observations.append(
                 ToolObservation(

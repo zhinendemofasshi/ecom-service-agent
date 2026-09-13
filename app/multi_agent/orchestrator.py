@@ -93,6 +93,12 @@ class MultiAgentOrchestrator:
             from app.agent.tools.skill_tool import set_skill_manager
             set_skill_manager(self.skill_manager)
 
+        for agent in self.agents.values():
+            agent.tool_manager.bind_agent_context(
+                memory_manager=self.memory_manager,
+                skill_manager=self.skill_manager,
+            )
+
         self.raw_messages: list[dict] = []
         self.summary: Optional[str] = None
 

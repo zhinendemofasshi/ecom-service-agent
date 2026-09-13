@@ -62,7 +62,46 @@ python main.py
 - `MCP_ENABLED=true` —— 通过 MCP 协议调用工具（需另起 `python mcp_server/server.py`）
 - `RAG_BACKEND=chroma` —— 换用 Chroma 向量数据库（需 `pip install chromadb`）
 
-LangGraph checkpoint 默认写入 `app/sessions/langgraph-checkpoints.sqlite`，用于在进程重启后恢复待审核操作。SQLite 适合本地开发；多实例生产部署应替换为共享的 PostgreSQL checkpointer。当前 LangGraph runtime 先覆盖单 Agent 模式，开启 `MULTI_AGENT_ENABLED` 时仍使用原有 Multi-Agent orchestrator。
+LangGraph checkpoint 默认写入 `app/sessions/langgraph-checkpoints.sqlite`，用于在进程重启后恢复待审核操作。SQLite 适合本地开发；`CHECKPOINT_BACKEND=postgres` 现已统一启用 PostgreSQL checkpoint、API/事件、退款审批、会话及记忆存储。当前 LangGraph runtime 先覆盖单 Agent 模式，开启 `MULTI_AGENT_ENABLED` 时仍使用原有 Multi-Agent orchestrator。
+
+### API、SSE 与生产配置
+
+配置 `AUTH_TOKENS`（服务端签发/配置的高熵登录凭证）和 `REFUND_APPROVER_IDS` 后启动。PostgreSQL 模式支持多个 worker，SQLite 模式仍使用单进程：
+
+```bash
+uvicorn app.api:app --host 0.0.0.0 --port 8000 --workers 2
+```
+
+默认携带 `Authorization: Bearer <token>`。`AUTH_TOKENS` 是 JSON 对象，键为高熵 token，值包含 `tenant_id`、`user_id`、`actor_id`、`roles` 和 Unix 秒数 `expires_at`。身份从服务端映射读取，忽略客户端身份 header；过期凭证返回 401。审批人须同时有 `approver` 角色并列入 `REFUND_APPROVER_IDS`；管理员使用 `admin` 角色。客服审批 token 的 `user_id` 是被授权服务的订单用户，`actor_id` 是实际审批人。凭证由可信登录系统或管理员配置，本项目不提供密码登录或外部 IdP。
+
+只有处在可信网关后时才设置 `TRUSTED_IDENTITY_HEADERS=true`，启用原有 `X-API-Key` / `X-Tenant-ID` / `X-User-ID` / `X-Actor-ID`，审批使用 `X-Approval-Key`，管理使用 `X-Admin-Key`。网关必须覆盖客户端提交的身份头；默认关闭此模式。
+
+主要接口：
+
+| 接口 | 用途 |
+|------|------|
+| `POST /sessions` | 创建隔离 session |
+| `POST /sessions/{id}/messages` | 发消息并启动 Agent run |
+| `GET /sessions/{id}/events?after=0` | SSE 读取 token、工具和审批事件；`after` 支持断线续传 |
+| `POST /sessions/{id}/approval` | `approve` / `edit` / `reject` 敏感操作 |
+| `POST /runs/{request_id}/approve`、`POST /runs/{request_id}/reject` | 按 run 审批；重复或过时审批返回 409 |
+| `POST /runs/{request_id}/cancel` | 取消待审批操作不调用模型；执行中的 run 在下一个检查点停止 |
+| `GET /runs/{request_id}` | 查询运行、审批等待、完成、失败或取消状态 |
+| `POST /admin/checkpoints/cleanup` | 清理超过保留期且已完成的 checkpoint |
+| `GET /health`、`GET /ready` | 存活和依赖就绪检查 |
+
+PostgreSQL 模式使用统一共享存储和数据库执行锁。迁移旧数据、生命周期清理和集成测试说明见 [PostgreSQL 运行与迁移](docs/postgres.md)：
+
+```dotenv
+CHECKPOINT_BACKEND=postgres
+DATABASE_URL=postgresql://user:password@postgres:5432/ecom_agent?sslmode=require
+```
+
+Responses API 的文本 delta 同时支持 CLI 实时打印与 SSE 持久化事件。消息 POST 会等待完成，但可以同时连接 events 接口读 token；建议预先设置 `X-Request-ID`，断线后查询对应 run，避免重复提交。POST 连接中断不会终止后台运行。SSE 接受 `Last-Event-ID` 或优先的 `after` 参数，过期游标返回 410，非法游标返回 422。`app.api_client.session_events` 提供自动重连、退避和游标去重；调用方持久化已处理事件的 `sequence`，服务保留最近 2000 个事件。
+
+工具统一经过超时、只读暂态错误指数退避重试、熔断及全进程 32 个执行槽位；参数错误不重试，写操作不自动重试。线程超时不能撤销已经发出的写操作，因此超时任务实际退出前仍占用槽位，写操作结果需用业务幂等键核对。退款服务独立保存审批状态，验证订单归属、审批人白名单、审批有效期、金额/次数和幂等键，在事务内记录退款及审计。取消不需要再次调用模型；审批有效期在决定和实际执行时均核验，不依赖 Graph 的暂停逻辑。
+
+当前订单来源仍是 `mock_data.ORDERS`，退款表示本地事务提交申请，没有连接支付渠道。Docker 和真实订单/支付系统部署验收见 [P0 核查记录](docs/p0-audit.md)。
 
 **跑评估 & 测试**：
 

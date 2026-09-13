@@ -1,7 +1,7 @@
 """工具注册表：OpenAI function calling schema + 分发执行"""
 
 import json
-from typing import Callable
+from typing import Any, Callable
 
 from app.agent.tools.order import query_order
 from app.agent.tools.product import query_product
@@ -188,13 +188,33 @@ TOOL_DEFINITIONS: list[dict] = [
 ]
 
 
-def execute_tool(name: str, arguments: dict) -> str:
+def execute_tool(name: str, arguments: dict, context: Any = None, *, config=None) -> str:
     """根据工具名称分发执行，返回 JSON 字符串结果。"""
     func = _TOOL_MAP.get(name)
     if not func:
-        return json.dumps({"error": f"未知工具: {name}"}, ensure_ascii=False)
+        return json.dumps({"success": False, "error_code": "unknown_tool", "error": f"未知工具: {name}"}, ensure_ascii=False)
     try:
-        result = func(**arguments)
+        if name == "apply_refund":
+            if context is None:
+                result = {"success": False, "error_code": "missing_context", "error": "退款必须通过带身份和审批上下文的执行器调用"}
+            else:
+                from app.config.settings import settings
+                settings = config or settings
+                result = func(
+                    **arguments,
+                    tenant_id=context.tenant_id,
+                    user_id=context.user_id,
+                    idempotency_key=context.idempotency_key,
+                    approved_by=context.approved_by,
+                    db_path=settings.refund_store,
+                    approver_ids=settings.refund_approver_ids,
+                    max_refund_amount=settings.max_refund_amount,
+                    max_refunds_per_user_per_day=settings.max_refunds_per_user_per_day,
+                )
+        else:
+            result = func(**arguments)
+    except (ConnectionError, TimeoutError) as e:
+        result = {"success": False, "error_code": "connection_error", "error": str(e)}
     except Exception as e:
-        result = {"error": f"工具执行出错: {e}"}
+        result = {"success": False, "error_code": "tool_exception", "error": f"工具执行出错: {e}"}
     return json.dumps(result, ensure_ascii=False)

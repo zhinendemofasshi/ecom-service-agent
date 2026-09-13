@@ -16,13 +16,22 @@ INTENT_LABELS = {
 }
 
 
+def print_stream_event(event):
+    if event.get("type") == "token_delta":
+        print(event.get("delta", ""), end="", flush=True)
+    elif event.get("type") == "model_started":
+        print("\n🤖 小夕: ", end="", flush=True)
+    elif event.get("type") in {"model_completed", "run_failed"}:
+        print()
+
+
 def main():
     if settings.multi_agent_enabled:
         from app.multi_agent.orchestrator import MultiAgentOrchestrator
         agent = MultiAgentOrchestrator()
         mode = "Multi-Agent 协作模式"
     else:
-        agent = EcomAgent()
+        agent = EcomAgent(event_sink=print_stream_event)
         mode = (
             "LangGraph + Responses API + HITL"
             if agent.runtime_name == "langgraph"
