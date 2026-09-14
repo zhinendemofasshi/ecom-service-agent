@@ -130,7 +130,7 @@ def test_sensitive_tool_can_be_rejected(tmp_path):
     try:
         runtime.invoke([{"role": "user", "content": "refund"}])
         completed = runtime.resume([{"type": "reject", "message": "not now"}])
-        assert completed["final_text"] == "退款已经提交。"
+        assert "not now" in completed["final_text"]
         assert manager.executed == []
         assert json.loads(completed["tool_history"][0]["output"])["error"] == "not now"
     finally:

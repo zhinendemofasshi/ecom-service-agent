@@ -16,6 +16,8 @@ LLM judge 仿照 app/agent/memory/extraction.py 的「格式化 → 调用 LLM �
 
 from __future__ import annotations
 
+from app.model import ModelGateway
+
 import json
 import re
 import unicodedata
@@ -183,7 +185,7 @@ def judge_answer_quality(
         user_input=user_input, reply=reply, reference=ref_text
     )
     try:
-        response = client.chat.completions.create(
+        response = ModelGateway(client).chat(
             model=model,
             temperature=0.0,
             messages=[{"role": "user", "content": prompt}],
@@ -213,7 +215,7 @@ def judge_faithfulness(
         obs_text = "（本次会话未调用任何工具）"
     prompt = HALLUCINATION_PROMPT.format(reply=reply, observations=obs_text)
     try:
-        response = client.chat.completions.create(
+        response = ModelGateway(client).chat(
             model=model,
             temperature=0.0,
             messages=[{"role": "user", "content": prompt}],
@@ -244,7 +246,7 @@ def judge_process_soundness(
         user_input=user_input, tool_sequence=seq_text
     )
     try:
-        response = client.chat.completions.create(
+        response = ModelGateway(client).chat(
             model=model,
             temperature=0.0,
             messages=[{"role": "user", "content": prompt}],

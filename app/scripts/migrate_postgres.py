@@ -29,7 +29,7 @@ from app.database import advisory_lock, pg_connect
 
 
 TABLES = {
-    "api": ("api_sessions", "api_runs", "api_events"),
+    "api": ("api_sessions", "api_runs", "api_events", "human_handoffs"),
     "refund": ("refund_approvals", "refund_requests", "refund_audit"),
     "checkpoint": ("agent_threads",),
 }

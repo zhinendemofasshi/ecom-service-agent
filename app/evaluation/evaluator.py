@@ -287,7 +287,7 @@ class Evaluator:
                 "variant": self.sandbox.variant,
                 "judge_enabled": self.use_judge,
                 "temperature": getattr(self.sandbox, "temperature", None),
-                "cost_scope": "agent chat completions only; embeddings and evaluator judge excluded",
+                "cost_scope": "agent Responses calls only; embeddings and evaluator judge excluded",
             },
             "summary": summary,
             "cases": [self._result_to_dict(r) for r in results],

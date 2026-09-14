@@ -62,7 +62,7 @@ python main.py
 - `MCP_ENABLED=true` —— 通过 MCP 协议调用工具（需另起 `python mcp_server/server.py`）
 - `RAG_BACKEND=chroma` —— 换用 Chroma 向量数据库（需 `pip install chromadb`）
 
-LangGraph checkpoint 默认写入 `app/sessions/langgraph-checkpoints.sqlite`，用于在进程重启后恢复待审核操作。SQLite 适合本地开发；`CHECKPOINT_BACKEND=postgres` 现已统一启用 PostgreSQL checkpoint、API/事件、退款审批、会话及记忆存储。当前 LangGraph runtime 先覆盖单 Agent 模式，开启 `MULTI_AGENT_ENABLED` 时仍使用原有 Multi-Agent orchestrator。
+LangGraph checkpoint 默认写入 `app/sessions/langgraph-checkpoints.sqlite`，用于在进程重启后恢复待审核操作。SQLite 适合本地开发；`CHECKPOINT_BACKEND=postgres` 现已统一启用 PostgreSQL checkpoint、API/事件、退款审批、会话及记忆存储。开启 `MULTI_AGENT_ENABLED` 后，Router、售前、售后、投诉均在同一个 LangGraph 中执行并共享 checkpoint。P1 实现、审批用法与边界见 [P1 验收说明](docs/p1-audit.md)。
 
 ### API、SSE 与生产配置
 
@@ -209,7 +209,7 @@ ecom-service-agent/
 │   ├── agent/                     # Agent 核心实现 + 全部 Agent 技术栈（tools / rag / skills）
 │   │   ├── chat.py                # 核心 ReAct 循环（集成 MemoryManager + SkillManager）
 │   │   ├── summarizer.py          # LLM 自我压缩老对话（支持工具消息）
-│   │   ├── storage.py             # 会话 JSON 持久化（含短期记忆）
+│   │   ├── storage.py             # 旧会话归档与一次性 Graph 迁移
 │   │   ├── memory/                # 记忆系统（第7期）
 │   │   │   ├── __init__.py        # 导出 MemoryManager / ShortTermMemory / LongTermMemory
 │   │   │   ├── manager.py         # MemoryManager：统一管理短期 + 长期记忆
@@ -270,7 +270,7 @@ ecom-service-agent/
 │   ├── multi_agent/               # Multi-Agent 协作（第6期）
 │   │   ├── router.py              # 意图路由器（LLM 分类 → 子 Agent）
 │   │   ├── agents.py              # SubAgent 子 Agent 类 + 配置
-│   │   └── orchestrator.py        # 编排器：路由 → 执行 → 结构化提取（集成 MemoryManager + SkillManager）
+│   │   └── orchestrator.py        # Multi-Agent 的 EcomAgent/Graph 入口
 │   ├── scripts/
 │   │   ├── build_kb_index.py      # 离线构建知识库索引（--backend numpy/chroma）
 │   │   ├── run_eval.py            # 单变体评估（baseline/optimized）
@@ -278,7 +278,7 @@ ecom-service-agent/
 │   │   ├── rescore_eval.py        # 历史 trace 离线重评（不重新调用模型）
 │   │   └── run_rag_eval.py        # RAG Recall@K / MRR / Faithfulness 评估
 │   └── sessions/                  # 运行时生成，已 .gitignore
-│       ├── session.json           # 当前会话快照
+│       ├── session.json           # 旧版会话迁移归档
 │       ├── kb_index.json          # NumpyBackend 索引
 │       ├── chroma/                # ChromaBackend 持久化目录
 │       └── memory/                # 长期记忆存储（按 user_id 分文件）

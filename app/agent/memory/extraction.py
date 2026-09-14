@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from app.model import ModelGateway
+
 import json
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -58,7 +60,7 @@ def extract_short_term_facts(
     existing_text = "\n".join(f"- {f}" for f in existing_facts) if existing_facts else "（暂无）"
     prompt = STM_EXTRACTION_PROMPT.format(existing_facts=existing_text)
 
-    response = client.chat.completions.create(
+    response = ModelGateway(client).chat(
         model=model,
         temperature=0.0,
         messages=[
@@ -113,7 +115,7 @@ def extract_long_term_facts(
     )
     prompt = LTM_EXTRACTION_PROMPT.format(existing_ltm=existing_text)
 
-    response = client.chat.completions.create(
+    response = ModelGateway(client).chat(
         model=model,
         temperature=0.0,
         messages=[

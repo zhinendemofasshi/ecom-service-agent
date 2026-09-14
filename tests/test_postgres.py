@@ -191,7 +191,7 @@ def test_two_api_instances_restore_refund_and_conversation(postgres_url):
         assert "event: approval_required" in events.text and "event: run_completed" in events.text
     with pg_connect(postgres_url) as connection:
         assert connection.execute("SELECT COUNT(*) FROM refund_requests").fetchone()[0] == 1
-        assert connection.execute("SELECT COUNT(*) FROM agent_documents WHERE namespace='session'").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM agent_documents WHERE namespace='session'").fetchone()[0] == 0
 
 
 def test_sqlite_migration_preserves_pending_checkpoint_and_is_repeatable(postgres_url, tmp_path):
@@ -299,3 +299,46 @@ def test_approval_handoff_to_separate_worker_process(postgres_url):
         assert first.get("/runs/process-run", headers=headers()).json()["status"] == "completed"
     with pg_connect(postgres_url) as connection:
         assert connection.execute("SELECT COUNT(*) FROM refund_requests").fetchone()[0] == 1
+
+
+def test_p1_web_approval_expiry_and_notification(postgres_url):
+    from fastapi.testclient import TestClient
+    config = Settings(_env_file=None, checkpoint_backend="postgres", database_url=postgres_url,
+        multi_agent_enabled=True, trusted_identity_headers=True, service_api_key="test-secret",
+        approver_api_key="approval-secret", refund_approver_ids=["actor-1"],
+        memory_enabled=False, skills_enabled=False)
+    with TestClient(create_app(config, StatefulAgent)) as client:
+        assert client.get("/approvals").status_code == 200
+        sid = client.post("/sessions", headers=headers()).json()["session_id"]
+        assert client.get(f"/sessions/{sid}/approvals").status_code == 401
+        response = client.post(f"/sessions/{sid}/messages",
+            headers={**headers(), "X-Request-ID": "expiring"}, json={"text": "退款"})
+        assert response.status_code == 200, response.text
+        actions = client.get(f"/sessions/{sid}/approvals", headers=headers()).json()["actions"]
+        assert actions[0]["order_id"] == "ORD-20240115-001"
+        assert actions[0]["amount"] > 0
+        with pg_connect(postgres_url) as connection:
+            connection.execute("UPDATE refund_approvals SET expires_at=0")
+        client.app.state.session_manager.expire_pending()
+        assert client.get("/runs/expiring", headers=headers()).json()["status"] == "expired"
+        assert client.get(f"/sessions/{sid}/approvals", headers=headers()).json()["actions"] == []
+        events = client.get(f"/sessions/{sid}/events?timeout_seconds=.1", headers=headers())
+        assert "approval_expired" in events.text
+        assert client.post("/runs/expiring/approve", headers=headers(approval=True)).status_code == 409
+    with pg_connect(postgres_url) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM refund_requests").fetchone()[0] == 0
+
+
+def test_p1_complaint_handoff_queue(postgres_url):
+    from fastapi.testclient import TestClient
+    config = Settings(_env_file=None, checkpoint_backend="postgres", database_url=postgres_url,
+        multi_agent_enabled=True, trusted_identity_headers=True, service_api_key="test-secret",
+        approver_api_key="approval-secret", memory_enabled=False, skills_enabled=False)
+    with TestClient(create_app(config, StatefulAgent)) as client:
+        sid = client.post("/sessions", headers=headers()).json()["session_id"]
+        response = client.post(f"/sessions/{sid}/messages", headers=headers(),
+            json={"text": "我要投诉，商品导致受伤"})
+        assert response.status_code == 200, response.text
+        assert response.json()["response"]["requires_human"]
+        items = client.get(f"/sessions/{sid}/handoffs", headers=headers()).json()["items"]
+        assert len(items) == 1 and items[0]["status"] == "open"

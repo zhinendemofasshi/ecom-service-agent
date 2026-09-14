@@ -17,7 +17,7 @@ from typing import Callable, Iterator, Literal
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel, Field
 from openai import OpenAI
 
@@ -34,8 +34,16 @@ class MessageRequest(BaseModel):
     text: str = Field(min_length=1, max_length=20_000)
 
 
+class ApprovalDecision(BaseModel):
+    call_id: str = Field(min_length=1,max_length=256)
+    type: Literal["approve","edit","reject"]
+    arguments: dict | None = None
+    message: str | None = Field(default=None,max_length=2000)
+
+
 class ApprovalRequest(BaseModel):
-    decision: Literal["approve", "edit", "reject"]
+    decisions: list[ApprovalDecision] | None = Field(default=None,min_length=1,max_length=50)
+    decision: Literal["approve", "edit", "reject"] | None = None
     arguments: dict | None = None
     message: str | None = Field(default=None, max_length=2_000)
 
@@ -101,6 +109,7 @@ class SessionManager:
         self.lock = threading.Lock()
         self.client = None
         self.checkpoint_store = None
+        self._last_cleanup = 0.0
         self.run_slots = (PostgresRunSlots(config.state_database_url, config.max_concurrent_runs)
                           if config.state_database_url else threading.BoundedSemaphore(config.max_concurrent_runs))
 
@@ -144,7 +153,26 @@ class SessionManager:
                 self.sessions[session_id] = managed
             return managed
 
+    def expire_pending(self):
+        from app.agent.tools.refund import expire_approvals
+        for request_id,tenant,user in expire_approvals(self.config.refund_store):
+            try:
+                row=self.registry.get_run(request_id,tenant,user)
+                if row['status']!='pending':
+                    continue
+                identity=Identity(tenant,user,'system-timeout',False,False)
+                managed=self.get(row['session_id'],identity)
+                with self.execution(row['session_id'],identity,managed):
+                    if self.registry.get_run(request_id,tenant,user)['status']!='pending': continue
+                    managed.broker.request_id=request_id
+                    managed.agent.expire_pending_approval()
+                    self.registry.finish_run(request_id,'expired')
+                    managed.broker.publish({'type':'approval_expired','request_id':request_id,'message':'审批超时，未执行退款'})
+            except (KeyError,DatabaseBusy):
+                continue
+
     def maintenance(self):
+        self.expire_pending()
         if not self.config.state_database_url:
             return
         with self.lock:
@@ -152,7 +180,11 @@ class SessionManager:
                 self.checkpoint_store = CheckpointStore(backend=self.config.checkpoint_backend,
                     sqlite_path=self.config.langgraph_checkpoint_path, database_url=self.config.database_url)
             store = self.checkpoint_store
-        store.cleanup(self.config.checkpoint_retention_days)
+        if time.monotonic()-self._last_cleanup >= self.config.checkpoint_cleanup_interval_seconds:
+            store.cleanup(self.config.checkpoint_retention_days)
+            from app.agent import document_store
+            document_store.cleanup(self.config.state_database_url,self.config.memory_retention_days,self.config.conversation_retention_days)
+            self._last_cleanup=time.monotonic()
         self.registry.recover_abandoned(self.config.abandoned_run_seconds)
 
     @contextmanager
@@ -195,7 +227,7 @@ def create_app(
         async def maintain():
             while not stop.is_set():
                 try:
-                    await asyncio.wait_for(stop.wait(), timeout=max(1, config.checkpoint_cleanup_interval_seconds))
+                    await asyncio.wait_for(stop.wait(), timeout=max(1, min(config.approval_poll_seconds,config.checkpoint_cleanup_interval_seconds)))
                 except asyncio.TimeoutError:
                     try:
                         await asyncio.to_thread(manager.maintenance)
@@ -206,7 +238,7 @@ def create_app(
         try:
             if config.state_database_url:
                 await asyncio.to_thread(manager.maintenance)
-                maintenance = asyncio.create_task(maintain())
+            maintenance = asyncio.create_task(maintain())
             yield
         finally:
             stop.set()
@@ -363,6 +395,32 @@ def create_app(
         task.add_done_callback(done)
         return await asyncio.shield(task)
 
+    @app.get("/approvals", include_in_schema=False)
+    def approval_page():
+        return FileResponse(Path(__file__).parent / 'web' / 'approvals.html', headers={
+            'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
+            'Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'"})
+
+    @app.get('/sessions/{session_id}/handoffs')
+    def handoffs(session_id: str, identity: Identity = Depends(authenticate)):
+        manager.get(session_id,identity)
+        with manager.registry.lock:
+            rows=manager.registry.connection.execute('SELECT request_id,status,payload FROM human_handoffs WHERE session_id=?',(session_id,)).fetchall()
+        return {'items':[{'request_id':r[0],'status':r[1],'event':json.loads(r[2])} for r in rows]}
+
+    @app.get('/sessions/{session_id}/approvals')
+    def pending_approvals(session_id: str, identity: Identity = Depends(authenticate)):
+        managed=manager.get(session_id,identity)
+        return {'actions':managed.agent.pending_approvals(),'server_time':time.time()}
+
+    @app.get('/sessions/{session_id}')
+    def session_state(session_id: str, identity: Identity = Depends(authenticate)):
+        managed=manager.get(session_id,identity)
+        with manager.execution(session_id,identity,managed):
+            state=managed.agent.graph_runtime.graph.get_state(managed.agent.graph_runtime.config).values
+            return {'messages':state.get('conversation',[]),'summary':state.get('summary'),
+                    'response':state.get('structured_response'),'message_schema_version':state.get('message_schema_version',1)}
+
     @app.get("/sessions/{session_id}/events")
     def events(
         session_id: str,
@@ -416,7 +474,10 @@ def create_app(
         identity: Identity = Depends(authenticate),
         expected_request_id: str | None = None,
     ) -> dict:
-        if body.decision in {"approve", "edit"} and (not identity.can_approve or identity.actor_id not in config.refund_approver_ids):
+        if bool(body.decisions) == bool(body.decision):
+            raise HTTPException(status_code=422,detail="请提供 decision 或 decisions 其中之一")
+        approving=body.decision in {"approve","edit"} or any(d.type in {"approve","edit"} for d in body.decisions or [])
+        if approving and (not identity.can_approve or identity.actor_id not in config.refund_approver_ids):
             raise HTTPException(status_code=403, detail="审批凭证无效")
         if body.decision == "edit" and body.arguments is None:
             raise HTTPException(status_code=422, detail="edit 必须提供 arguments")
@@ -437,11 +498,14 @@ def create_app(
                         raise HTTPException(status_code=409, detail="run 不处于待审批状态")
                     managed.broker.request_id = pending[0]
                     try:
-                        response = managed.agent.resume_approval(
-                            body.decision != "reject",
-                            arguments=body.arguments if body.decision == "edit" else None,
-                            message=body.message, approved_by=identity.actor_id,
-                        )
+                        if body.decisions:
+                            response=managed.agent.resume_decisions([d.model_dump(exclude_none=True) for d in body.decisions],identity.actor_id)
+                        else:
+                            response = managed.agent.resume_approval(
+                                body.decision != "reject",
+                                arguments=body.arguments if body.decision == "edit" else None,
+                                message=body.message, approved_by=identity.actor_id,
+                            )
                     except RuntimeError as exc:
                         raise HTTPException(status_code=409, detail=str(exc)) from exc
                     except Exception as exc:
@@ -479,11 +543,11 @@ def create_app(
         return await approval(row["session_id"], ApprovalRequest(decision="approve"), identity, request_id)
 
     @app.post("/runs/{request_id}/reject")
-    async def reject_run(request_id: str, identity: Identity = Depends(authenticate)) -> dict:
+    async def reject_run(request_id: str, body: ApprovalRequest | None = None, identity: Identity = Depends(authenticate)) -> dict:
         row = owned_run(request_id, identity)
         if row["status"] != "pending":
             raise HTTPException(status_code=409, detail="run 不处于待审批状态")
-        return await approval(row["session_id"], ApprovalRequest(decision="reject"), identity, request_id)
+        return await approval(row["session_id"], ApprovalRequest(decision="reject",message=body.message if body else None), identity, request_id)
 
     @app.post("/runs/{request_id}/cancel", status_code=202)
     async def cancel_run(request_id: str, identity: Identity = Depends(authenticate)) -> dict:

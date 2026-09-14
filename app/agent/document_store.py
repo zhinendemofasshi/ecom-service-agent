@@ -48,3 +48,27 @@ def delete(url, namespace, key):
         connection.execute("DELETE FROM agent_documents WHERE namespace = ? AND document_key = ?", (namespace, key))
     finally:
         connection.close()
+
+
+def cleanup(url, memory_days, session_days):
+    from datetime import UTC,datetime,timedelta
+    from app.database import advisory_lock,DatabaseBusy
+    connection=connect(url)
+    deleted=0
+    try:
+        for namespace,days in [('memory',memory_days),('session',session_days)]:
+            cutoff=datetime.now(UTC)-timedelta(days=max(1,days))
+            rows=connection.execute('SELECT document_key,payload FROM agent_documents WHERE namespace=? AND updated_at < ?', (namespace,cutoff)).fetchall()
+            for key,raw in rows:
+                # Only archive documents which have already been imported into Graph.
+                if namespace=='session' and not json.loads(raw).get('migrated_to_graph'):
+                    continue
+                identity=json.loads(key)
+                try:
+                    with advisory_lock(url,'api-user',f'{identity[0]}:{identity[1]}'):
+                        deleted+=connection.execute('DELETE FROM agent_documents WHERE namespace=? AND document_key=? AND updated_at < ?', (namespace,key,cutoff)).rowcount
+                except DatabaseBusy:
+                    continue
+        return deleted
+    finally:
+        connection.close()

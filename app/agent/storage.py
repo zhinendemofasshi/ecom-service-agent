@@ -61,6 +61,8 @@ def load_session(path: str, *, database_url: str = "", storage_key: str = "") ->
         return None
 
     return {
+        "version":data.get("version",1),
+        "migrated_to_graph":data.get("migrated_to_graph"),
         "summary": data.get("summary"),
         "messages": data.get("messages", []),
         "short_term_memory": data.get("short_term_memory"),
@@ -76,3 +78,19 @@ def delete_session(path: str, *, database_url: str = "", storage_key: str = "") 
     file_path = Path(path)
     if file_path.exists():
         file_path.unlink()
+
+
+def mark_migrated(path, thread_id, *, database_url='', storage_key=''):
+    """Retain the old document as an archive, never reimport it after retention."""
+    payload=load_session(path,database_url=database_url,storage_key=storage_key)
+    if not payload or payload.get('migrated_to_graph'):
+        return
+    payload['migrated_to_graph']=thread_id
+    if database_url:
+        from app.agent import document_store
+        document_store.save(database_url,'session',storage_key or path,payload)
+    else:
+        target=Path(path)
+        temp=target.with_suffix(target.suffix+'.tmp')
+        temp.write_text(json.dumps(payload,ensure_ascii=False),encoding='utf-8')
+        os.replace(temp,target)

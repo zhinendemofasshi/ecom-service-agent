@@ -1,4 +1,5 @@
 from app.agent.chat import EcomAgent
+from app.approval_cli import handle_approval, show_pending
 from app.config.settings import settings
 from app.schemas.response import IntentType
 
@@ -28,7 +29,7 @@ def print_stream_event(event):
 def main():
     if settings.multi_agent_enabled:
         from app.multi_agent.orchestrator import MultiAgentOrchestrator
-        agent = MultiAgentOrchestrator()
+        agent = MultiAgentOrchestrator(event_sink=print_stream_event)
         mode = "Multi-Agent 协作模式"
     else:
         agent = EcomAgent(event_sink=print_stream_event)
@@ -43,7 +44,7 @@ def main():
     print("  支持工具调用 + 政策检索 + 用户记忆 + 技能编排")
     print("  输入 quit/exit 退出, reset 重置, memory 查看记忆, skills 查看技能")
     if getattr(agent, "runtime_name", None) == "langgraph":
-        print("  敏感操作暂停后输入 approve 批准，或 reject 拒绝")
+        print("  审批：approve <call_id>；reject <call_id> 原因；edit <call_id> JSON参数")
     print("=" * 50)
     print()
 
@@ -109,24 +110,18 @@ def main():
                 print("记忆功能未启用\n")
             continue
 
-        if user_input.lower() in ("approve", "批准", "同意"):
+        if user_input.split(' ',1)[0].lower() in {'approve','reject','edit'}:
             try:
-                response = agent.resume_approval(True)
+                response=handle_approval(user_input,agent,settings.cli_actor_id or agent.user_id)
                 print(f"\n🤖 小夕: {response.reply}\n")
-            except (AttributeError, RuntimeError) as e:
-                print(f"\n⚠️  {e}\n")
-            continue
-
-        if user_input.lower() in ("reject", "拒绝", "不同意"):
-            try:
-                response = agent.resume_approval(False)
-                print(f"\n🤖 小夕: {response.reply}\n")
-            except (AttributeError, RuntimeError) as e:
-                print(f"\n⚠️  {e}\n")
+                show_pending(agent)
+            except (ValueError,RuntimeError) as exc:
+                print(f"\n⚠️ {exc}\n")
             continue
 
         try:
             response = agent.chat(user_input)
+            show_pending(agent)
 
             # 打印客服回复
             print(f"\n🤖 小夕: {response.reply}")

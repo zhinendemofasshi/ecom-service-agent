@@ -1,3 +1,5 @@
+
+from app.model import ModelGateway
 import json
 from typing import Optional
 
@@ -47,7 +49,7 @@ def summarize(
 
     user_content = "\n\n".join(parts)
 
-    response = client.chat.completions.create(
+    response = ModelGateway(client).chat(
         model=model,
         temperature=0.3,
         messages=[

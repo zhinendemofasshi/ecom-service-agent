@@ -12,7 +12,9 @@
 | checkpoint 归属与保留期 | `agent_threads` |
 | API session、run、SSE 游标 | `api_sessions`、`api_runs`、`api_events` |
 | 退款申请、审批与审计 | `refund_requests`、`refund_approvals`、`refund_audit` |
-| 对话历史、摘要、短期记忆及长期记忆 | `agent_documents` |
+| 对话历史、摘要、短期记忆、消息 schema 版本 | Graph checkpoint |
+| 长期用户记忆、旧版会话迁移归档 | `agent_documents` |
+| 人工待办队列 | `human_handoffs` |
 | 数据迁移记录 | `storage_migrations` |
 
 API 的用户执行锁、Graph 线程锁以及运行槽位使用 PostgreSQL advisory lock。相同用户的会话在不同 worker 间互斥，避免长期记忆并发覆盖；忙时返回 409，不无限排队。运行容量达到上限返回 429。各 worker 的 `MAX_CONCURRENT_RUNS` 必须一致；本机配置为 8，该值是整个服务的上限。工具线程池仍按进程限制为 32。

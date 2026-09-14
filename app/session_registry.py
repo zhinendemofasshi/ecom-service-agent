@@ -50,6 +50,11 @@ class SessionRegistry:
             );
         """)
         self.connection.executescript("""
+            CREATE TABLE IF NOT EXISTS human_handoffs (
+                request_id TEXT PRIMARY KEY, session_id TEXT NOT NULL,
+                payload TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open',
+                created_at TEXT NOT NULL
+            );
             CREATE INDEX IF NOT EXISTS api_runs_session_status ON api_runs(session_id, status);
             CREATE INDEX IF NOT EXISTS api_runs_status_updated ON api_runs(status, updated_at);
         """)
@@ -104,6 +109,9 @@ class SessionRegistry:
                     "DELETE FROM api_events WHERE session_id = ? AND sequence <= ?",
                     (session_id, cutoff),
                 )
+                if event.get('type')=='handoff_required' and event.get('request_id'):
+                    self.connection.execute("INSERT OR IGNORE INTO human_handoffs(request_id,session_id,payload,status,created_at) VALUES (?,?,?,'open',?)",
+                        (event['request_id'],session_id,json.dumps(enriched,ensure_ascii=False),event['timestamp']))
                 self.connection.commit()
                 return enriched
             except Exception:

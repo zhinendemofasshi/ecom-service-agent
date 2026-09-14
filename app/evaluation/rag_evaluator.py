@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from app.model import ModelGateway
+
 import json
 import time
 from dataclasses import asdict, dataclass, field
@@ -113,7 +115,7 @@ class RagEvaluator:
 
     def _chat(self, prompt: str, model: str) -> tuple[str, int, int, float]:
         started = time.perf_counter()
-        response = self.client.chat.completions.create(
+        response = ModelGateway(self.client).chat(
             model=model,
             temperature=0.0,
             messages=[{"role": "user", "content": prompt}],
@@ -296,7 +298,7 @@ class RagEvaluator:
                 "answer_context_top_k": max(self.k_values),
                 "ranking_depth": self.retriever.size,
                 "cost_scope": (
-                    "answer generation and faithfulness judge chat completions; "
+                    "answer generation and faithfulness judge Responses calls; "
                     "query embeddings excluded; total is null when judge pricing is not configured"
                 ),
             },

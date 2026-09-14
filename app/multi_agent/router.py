@@ -1,3 +1,5 @@
+
+from app.model import ModelGateway
 """意图路由器：分析用户消息，决定分发给哪个子 Agent。"""
 
 from typing import List, Optional
@@ -93,7 +95,7 @@ class Router:
         if recent_context:
             prompt = recent_context + "\n" + prompt
 
-        response = self.client.chat.completions.create(
+        response = ModelGateway(self.client).chat(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,

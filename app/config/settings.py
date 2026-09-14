@@ -62,6 +62,13 @@ class Settings(BaseSettings):
 
     # Multi-Agent 配置（第6期）
     multi_agent_enabled: bool = False
+    cli_actor_id: str = ""
+    router_strategy: str = "hybrid"
+    guardrails_enabled: bool = True
+    context_token_budget: int = 24000
+    conversation_retention_days: int = 90
+    memory_retention_days: int = 365
+    approval_poll_seconds: int = 15
 
     # Memory 配置（第7期）
     memory_enabled: bool = True

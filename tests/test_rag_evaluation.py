@@ -131,12 +131,12 @@ def test_answer_and_judge_models_are_separated_without_inventing_judge_cost():
                 else '{"faithful": true, "unsupported_claims": [], "reason": "有依据"}'
             )
             return SimpleNamespace(
-                choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
-                usage=SimpleNamespace(prompt_tokens=100, completion_tokens=20),
+                output_text=content,output=[],
+                usage=SimpleNamespace(input_tokens=100, output_tokens=20,total_tokens=120),
             )
 
     completions = FakeCompletions()
-    client = SimpleNamespace(chat=SimpleNamespace(completions=completions))
+    client = SimpleNamespace(responses=completions)
     evaluator = RagEvaluator(
         retriever=FakeRetriever(),
         client=client,
@@ -161,7 +161,8 @@ def test_answer_and_judge_models_are_separated_without_inventing_judge_cost():
         "gpt-5.6-luna",
     ]
     assert "reasoning_effort" not in completions.calls[0]
-    assert completions.calls[1]["reasoning_effort"] == "none"
+    assert "temperature" not in completions.calls[1]
+    assert completions.calls[1]["store"] is False
     assert report["summary"]["faithfulness"] == 1.0
     assert report["summary"]["estimated_answer_cost_usd"] > 0
     assert report["summary"]["estimated_judge_cost_usd"] is None

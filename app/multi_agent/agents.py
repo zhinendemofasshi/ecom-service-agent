@@ -1,3 +1,5 @@
+
+from app.model import ModelGateway
 """子 Agent 定义：每个子 Agent 有专属的 system prompt 和工具子集。
 
 SubAgent 封装了一个轻量级 ReAct 循环，由 Orchestrator 调度执行。
@@ -63,7 +65,7 @@ class SubAgent:
         tool_cache: dict[str, str] = {}
 
         for _ in range(max_steps):
-            response = self.client.chat.completions.create(
+            response = ModelGateway(self.client).chat(
                 model=self.model,
                 messages=working,
                 temperature=self.temperature,
@@ -121,7 +123,7 @@ class SubAgent:
                 new_messages.append(tool_msg)
                 working.append(tool_msg)
 
-        response = self.client.chat.completions.create(
+        response = ModelGateway(self.client).chat(
             model=self.model,
             messages=working,
             temperature=self.temperature,

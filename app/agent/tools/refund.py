@@ -58,6 +58,11 @@ def _connect(db_path: str) -> sqlite3.Connection | PostgresConnection:
         );
         """
     )
+    if isinstance(connection, PostgresConnection):
+        connection.execute("ALTER TABLE refund_approvals ADD COLUMN IF NOT EXISTS request_id TEXT NOT NULL DEFAULT ''")
+    elif 'request_id' not in {r[1] for r in connection.execute('PRAGMA table_info(refund_approvals)')}:
+        connection.execute("ALTER TABLE refund_approvals ADD COLUMN request_id TEXT NOT NULL DEFAULT ''")
+        connection.commit()
     return connection
 
 
@@ -191,13 +196,13 @@ def _audit(connection, key, tenant, user, order, action, outcome, details, now) 
 
 
 def register_refund_approval(*, db_path: str, idempotency_key: str, tenant_id: str,
-                             user_id: str, order_id: str, reason: str, timeout_seconds: float) -> None:
+                             user_id: str, order_id: str, reason: str, timeout_seconds: float, request_id: str = "") -> None:
     connection = _connect(db_path)
     try:
         with connection:
             inserted = connection.execute(
-                "INSERT OR IGNORE INTO refund_approvals VALUES (?, ?, ?, ?, ?, 'pending', '', ?)",
-                (idempotency_key, tenant_id, user_id, order_id, reason, time.time() + timeout_seconds),
+                "INSERT OR IGNORE INTO refund_approvals(idempotency_key,tenant_id,user_id,order_id,reason,status,actor_id,expires_at,request_id) VALUES (?, ?, ?, ?, ?, 'pending', '', ?, ?)",
+                (idempotency_key, tenant_id, user_id, order_id, reason, time.time() + timeout_seconds, request_id),
             ).rowcount
             if inserted:
                 _audit(connection, idempotency_key, tenant_id, user_id, order_id,
@@ -210,6 +215,7 @@ def record_refund_decision(
     *, db_path: str, idempotency_key: str, tenant_id: str, user_id: str,
     order_id: str, reason: str, decision: str, actor_id: str,
     approver_ids: list[str] | None = None,
+    message: str = "",
 ) -> None:
     """CAS transition enforced by the refund service, independently of Graph."""
     from app.config.settings import settings
@@ -220,13 +226,15 @@ def record_refund_decision(
         connection.execute("BEGIN IMMEDIATE")
         refund_transaction_lock(connection, tenant_id, user_id)
         row = connection.execute(
-            "SELECT tenant_id, user_id, status, expires_at FROM refund_approvals WHERE idempotency_key = ?",
+            "SELECT tenant_id, user_id, status, expires_at, order_id FROM refund_approvals WHERE idempotency_key = ?",
             (idempotency_key,),
         ).fetchone()
         if not row or row[:2] != (tenant_id, user_id):
             error = "退款审批请求不存在或身份不符"
         elif row[2] != "pending":
             error = "退款审批已处理，不能重复审批"
+        elif order_id != row[4]:
+            error = "审批不能更换订单，请重新发起申请"
         elif decision not in {"approve", "edit", "reject"}:
             error = "审批决定无效"
         elif decision in {"approve", "edit"} and actor_id not in authorized_approvers:
@@ -241,7 +249,7 @@ def record_refund_decision(
             )
         _audit(connection, idempotency_key, tenant_id, user_id, order_id, "approval",
                "denied" if error else decision,
-               {"actor_id": actor_id, "reason": reason, "error": error}, datetime.now(UTC).isoformat())
+               {"actor_id": actor_id, "reason": reason, "decision_message": message, "error": error}, datetime.now(UTC).isoformat())
         connection.commit()
     except Exception:
         connection.rollback()
@@ -265,3 +273,21 @@ def apply_refund(order_id: str, reason: str, **kwargs) -> dict:
         finally:
             connection.close()
     return result
+
+
+def expire_approvals(db_path):
+    connection=_connect(db_path)
+    try:
+        connection.execute('BEGIN IMMEDIATE')
+        rows=connection.execute("SELECT idempotency_key,tenant_id,user_id,order_id FROM refund_approvals WHERE status='pending' AND expires_at <= ?", (time.time(),)).fetchall()
+        for key,tenant,user,order in rows:
+            changed=connection.execute("UPDATE refund_approvals SET status='expired' WHERE idempotency_key=? AND status='pending' AND expires_at <= ?", (key,time.time())).rowcount
+            if changed:
+                _audit(connection,key,tenant,user,order,'expiry','expired',{'actor_id':'system-timeout'},datetime.now(UTC).isoformat())
+        connection.commit()
+        return connection.execute("SELECT DISTINCT request_id,tenant_id,user_id FROM refund_approvals WHERE status='expired' AND request_id != ''").fetchall()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()

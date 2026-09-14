@@ -1,3 +1,5 @@
+
+from app.model import ModelGateway
 import json
 from hashlib import sha256
 from pathlib import Path
@@ -6,7 +8,7 @@ from uuid import uuid4
 
 from openai import OpenAI
 
-from app.agent.storage import delete_session, load_session, save_session
+from app.agent.storage import delete_session, load_session, save_session, mark_migrated
 from app.agent.summarizer import summarize
 from app.config.settings import settings
 from app.config.model_compat import chat_completion_options
@@ -52,7 +54,7 @@ class EcomAgent:
         self.history_threshold = settings.history_threshold
         self.history_keep_recent = settings.history_keep_recent
         self.max_react_steps = settings.max_react_steps
-        self.runtime_name = settings.agent_runtime
+        self.runtime_name = "langgraph"
         self.tenant_id = tenant_id
         self.user_id = user_id or settings.memory_user_id
         self.event_sink = event_sink
@@ -126,6 +128,12 @@ class EcomAgent:
                 tool_policy=self._tool_policy(),
                 approval_timeout_seconds=settings.approval_timeout_seconds,
                 checkpoint_store=checkpoint_store,
+                multi_agent=settings.multi_agent_enabled,
+                router_strategy=settings.router_strategy,
+                guardrails_enabled=settings.guardrails_enabled,
+                context_token_budget=settings.context_token_budget,
+                extract_response=self._extract_structured_response,
+                update_memory=self._capture_short_term,
             )
         elif self.runtime_name != "legacy":
             raise ValueError("AGENT_RUNTIME 必须是 'langgraph' 或 'legacy'")
@@ -133,12 +141,13 @@ class EcomAgent:
         self.raw_messages: list[dict] = []
         self.summary: Optional[str] = None
 
-        loaded = load_session(self.session_path, **self._storage_options)
+        loaded=load_session(self.session_path, **self._storage_options)
+        if not self.graph_runtime.graph.get_state(self.graph_runtime.config).values and loaded and not loaded.get('migrated_to_graph'):
+            self.graph_runtime.bootstrap(loaded)
         if loaded:
-            self.summary = loaded["summary"]
-            self.raw_messages = loaded["messages"]
-            if loaded.get("short_term_memory"):
-                self.memory_manager.restore_stm(loaded["short_term_memory"])
+            mark_migrated(self.session_path,self.graph_runtime.thread_id,**self._storage_options)
+        self.reload_state()
+        self.router=self.graph_runtime.router
 
     @property
     def history_size(self) -> int:
@@ -146,46 +155,45 @@ class EcomAgent:
 
     def reload_state(self):
         """Called under the shared user lock before a different API worker runs."""
-        loaded = load_session(self.session_path, **self._storage_options)
-        self.raw_messages = loaded.get("messages", []) if loaded else []
-        self.summary = loaded.get("summary") if loaded else None
+        self.raw_messages,self.summary=self.graph_runtime.history()
+        memory=self.graph_runtime.graph.get_state(self.graph_runtime.config).values.get('short_term_memory')
         self.memory_manager.reset_short_term()
-        if loaded and loaded.get("short_term_memory"):
-            self.memory_manager.restore_stm(loaded["short_term_memory"])
+        if memory:
+            self.memory_manager.restore_stm(memory)
         if self.memory_manager.memory_enabled:
             self.memory_manager.ltm.load()
 
-    def chat(
-        self,
-        user_input: str,
-        *,
-        request_id: str = "",
-        cancel_check: Optional[Callable[[], bool]] = None,
-    ) -> CustomerServiceResponse:
-        """处理用户输入：ReAct 循环 → 结构化提取 → 返回结果"""
+    def chat(self, user_input: str, *, request_id: str = "", cancel_check=None):
         if self.has_pending_approval:
             return self._pending_approval_response()
+        messages=self._build_messages()+[{"role":"user","content":user_input}]
+        return self._consume(self.graph_runtime.invoke(messages,request_id=request_id or str(uuid4()),cancel_check=cancel_check))
 
-        self.raw_messages.append({"role": "user", "content": user_input})
+    def _consume(self, graph_result):
+        self.reload_state()
+        if graph_result.get('__interrupt__'):
+            return self._pending_approval_response()
+        result=CustomerServiceResponse.model_validate(graph_result['structured_response'])
+        if self.event_sink:
+            self.event_sink({'type':'run_completed','response':result.model_dump(mode='json')})
+        return result
 
-        if self.graph_runtime is not None:
-            graph_result = self.graph_runtime.invoke(
-                self._build_messages(),
-                request_id=request_id or str(uuid4()),
-                cancel_check=cancel_check,
-            )
-            if graph_result.get("__interrupt__"):
-                save_session(
-                    self.session_path, self.raw_messages, self.summary,
-                    short_term_memory=self.memory_manager.stm_to_dict(), **self._storage_options,
-                )
-                return self._pending_approval_response()
-            final_text = graph_result.get("final_text", "")
-            self._append_graph_messages(graph_result)
-        else:
-            final_text = self._react_loop()
+    def _capture_short_term(self, messages):
+        try:
+            self.memory_manager.update_short_term(messages[-6:])
+        except Exception:
+            return self.memory_manager.stm_to_dict()
+        return self.memory_manager.stm_to_dict()
 
-        return self._finish_chat(final_text)
+    def pending_approvals(self):
+        return self.graph_runtime.pending_actions()
+
+    def expire_pending_approval(self):
+        self.graph_runtime.cancel_pending("system-timeout", "审批已超时，请重新发起申请")
+        self.reload_state()
+
+    def resume_decisions(self, decisions, approved_by):
+        return self._consume(self.graph_runtime.resume([{**d,'approved_by':approved_by} for d in decisions]))
 
     @property
     def has_pending_approval(self) -> bool:
@@ -225,37 +233,7 @@ class EcomAgent:
                 "message": message or "用户拒绝了该操作",
                 "approved_by": approved_by or self.user_id,
             }
-        graph_result = self.graph_runtime.resume([decision])
-        if graph_result.get("__interrupt__"):
-            return self._pending_approval_response()
-        final_text = graph_result.get("final_text", "")
-        self._append_graph_messages(graph_result)
-        return self._finish_chat(final_text)
-
-    def _finish_chat(self, final_text: str) -> CustomerServiceResponse:
-        """Apply the existing response, memory, compression, and persistence path."""
-
-        result = self._extract_structured_response(final_text)
-
-        self.memory_manager.update_short_term(self.raw_messages[-6:])
-
-        self.raw_messages.append(
-            {"role": "assistant", "content": result.model_dump_json(ensure_ascii=False)}
-        )
-
-        if len(self.raw_messages) > self.history_threshold:
-            self._compress_history()
-
-        save_session(
-            self.session_path, self.raw_messages, self.summary,
-            short_term_memory=self.memory_manager.stm_to_dict(), **self._storage_options,
-        )
-        if self.event_sink:
-            self.event_sink({
-                "type": "run_completed",
-                "response": result.model_dump(mode="json"),
-            })
-        return result
+        return self._consume(self.graph_runtime.resume([decision]))
 
     def _tool_policy(self):
         settings = self.config
@@ -314,10 +292,8 @@ class EcomAgent:
         delete_session(self.session_path, **self._storage_options)
 
     def save(self) -> None:
-        save_session(
-            self.session_path, self.raw_messages, self.summary,
-            short_term_memory=self.memory_manager.stm_to_dict(), **self._storage_options,
-        )
+        # Graph nodes have already committed the only execution state.
+        self.reload_state()
 
     def close(self):
         self.memory_manager.consolidate_to_long_term(self.raw_messages, self.summary)
@@ -325,82 +301,10 @@ class EcomAgent:
             self.graph_runtime.close()
         self.tool_manager.close()
 
-    def _react_loop(self) -> str:
-        """ReAct 循环：调用 LLM → 执行工具 → 观察结果 → 重复，直到模型给出最终回答。"""
-        tool_cache: dict[str, str] = {}
-        for step in range(self.max_react_steps):
-            messages = self._build_messages()
-
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=self.temperature,
-                tools=self.tool_manager.tool_definitions,
-                **chat_completion_options(self.model),
-            )
-            choice = response.choices[0]
-            assistant_msg = choice.message
-
-            if assistant_msg.content:
-                self._print_thought(assistant_msg.content)
-
-            if not assistant_msg.tool_calls:
-                content = assistant_msg.content or ""
-                self.raw_messages.append({"role": "assistant", "content": content})
-                return content
-
-            msg_dict = {"role": "assistant", "content": assistant_msg.content}
-            msg_dict["tool_calls"] = [
-                {
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {
-                        "name": tc.function.name,
-                        "arguments": tc.function.arguments,
-                    },
-                }
-                for tc in assistant_msg.tool_calls
-            ]
-            self.raw_messages.append(msg_dict)
-
-            for tc in assistant_msg.tool_calls:
-                func_name = tc.function.name
-                func_args = json.loads(tc.function.arguments)
-
-                cache_key = tool_cache_key(func_name, func_args)
-                if cache_key is not None and cache_key in tool_cache:
-                    self._print_cache_hit(func_name, func_args)
-                    result_str = tool_cache[cache_key]
-                else:
-                    self._print_action(func_name, func_args)
-                    result_str = self.tool_manager.execute_tool(func_name, func_args)
-                    if cache_key is not None:
-                        tool_cache[cache_key] = result_str
-                    else:
-                        tool_cache.clear()
-                self._print_observation(result_str)
-
-                self.raw_messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": result_str,
-                })
-
-        messages = self._build_messages()
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=self.temperature,
-            **chat_completion_options(self.model),
-        )
-        content = response.choices[0].message.content or ""
-        self.raw_messages.append({"role": "assistant", "content": content})
-        return content
-
     def _extract_structured_response(self, text: str) -> CustomerServiceResponse:
         """从最终文本中提取结构化元数据（意图、置信度等）。"""
         try:
-            response = self.client.beta.chat.completions.parse(
+            response = ModelGateway(self.client).chat_parse(
                 model=self.model,
                 messages=[
                     {
@@ -420,7 +324,7 @@ class EcomAgent:
     def _extract_structured_fallback(self, text: str) -> CustomerServiceResponse:
         """当 response_format 不被 API 支持时，用 prompt 引导 JSON 输出。"""
         intent_values = ", ".join(f'"{e.value}"' for e in IntentType)
-        response = self.client.chat.completions.create(
+        response = ModelGateway(self.client).chat(
             model=self.model,
             messages=[
                 {
@@ -456,38 +360,7 @@ class EcomAgent:
             {"role": "system", "content": system_content}
         ]
         messages.extend(self.memory_manager.build_memory_prompt_sections())
-        if self.summary:
-            messages.append(
-                {
-                    "role": "system",
-                    "content": f"以下是此前对话的摘要，用于延续上下文记忆：\n{self.summary}",
-                }
-            )
-        messages.extend(self.raw_messages)
         return messages
-
-    def _compress_history(self) -> None:
-        keep = self.history_keep_recent
-        split = len(self.raw_messages) - keep
-        while split > 0 and self.raw_messages[split].get("role") in ("tool",):
-            split -= 1
-        if split <= 0:
-            return
-        old_messages = self.raw_messages[:split]
-        recent = self.raw_messages[split:]
-
-        new_summary = summarize(
-            client=self.client,
-            model=self.model,
-            old_messages=old_messages,
-            prev_summary=self.summary,
-        )
-        self.summary = new_summary
-        self.raw_messages = recent
-        print(
-            f"\n💾 [已压缩 {len(old_messages)} 条老消息 → summary "
-            f"({len(new_summary)} 字)]\n"
-        )
 
     def _print_thought(self, text: str) -> None:
         print(f"\n💭 [思考] {text}")

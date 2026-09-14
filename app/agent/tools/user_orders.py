@@ -8,7 +8,7 @@ STATUS_LABELS = {
 }
 
 
-def list_user_orders() -> dict:
+def list_user_orders(*, tenant_id=None, user_id=None) -> dict:
     """查询当前用户的所有订单概要列表。"""
     orders = [
         {
@@ -19,5 +19,6 @@ def list_user_orders() -> dict:
             "created_at": o["created_at"],
         }
         for o in ORDERS.values()
+        if tenant_id is None or (o.get("tenant_id"),o.get("user_id")) == (tenant_id,user_id)
     ]
     return {"success": True, "count": len(orders), "orders": orders}

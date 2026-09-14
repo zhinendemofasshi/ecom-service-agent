@@ -127,7 +127,7 @@ def build_comparison(baseline: dict, optimized: dict) -> dict:
             "cases": baseline["summary"]["total"],
             "pricing": baseline["summary"]["pricing"],
             "cost_scope": (
-                "agent chat completions only; embeddings and evaluator judge excluded"
+                "agent Responses calls only; embeddings and evaluator judge excluded"
             ),
         },
         "metrics": metrics,

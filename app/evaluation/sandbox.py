@@ -6,7 +6,7 @@
    prompt 污染评分）；关闭 MCP 只用本地 mock 工具（保证可复现，且让幻觉检测有确定
    的 ground truth）。
 2. 插桩：单/多 Agent 都只共享一个 OpenAI client 实例，给它的
-   chat.completions.create / beta.chat.completions.parse 打补丁，即可捕获整个会话
+   responses.create 打补丁，即可捕获整个会话
    所有 LLM 调用的 token、被请求的工具、延迟——无需改动 chat.py / orchestrator.py。
    工具返回值则通过包裹 ToolManager.execute_tool 采集。
 3. 执行：顺序跑完用例的多轮输入，把过程与结果填进 RunTrace 返回。
@@ -142,15 +142,6 @@ class Sandbox:
     # ---------- 插桩 ----------
     def _instrument(self, agent, trace: RunTrace, patches: list[tuple]) -> None:
         """给共享 client、各 ToolManager、（多 Agent）Router 打补丁。"""
-        # 1) LLM client：create + beta.parse
-        completions = agent.client.chat.completions
-        patches.append((completions, "create", completions.create))
-        completions.create = self._wrap_create(completions.create, trace)
-
-        beta_completions = agent.client.beta.chat.completions
-        patches.append((beta_completions, "parse", beta_completions.parse))
-        beta_completions.parse = self._wrap_parse(beta_completions.parse, trace)
-
         # LangGraph runtime uses Responses API for the model/tool loop.
         responses = agent.client.responses
         patches.append((responses, "create", responses.create))

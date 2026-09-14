@@ -89,6 +89,11 @@ class ToolManager:
 
     def execute_tool(self, name: str, arguments: dict, context=None) -> str:
         """根据工具来源分发调用。"""
+        if context is not None:
+            from app.agent.guardrails import Guardrails
+            error=Guardrails().tool_policy(name, arguments, self.tool_definitions,context.tenant_id,context.user_id)
+            if error:
+                return json.dumps({"success":False,"error_code":"policy_denied","error":error},ensure_ascii=False)
         source = self._tool_source.get(name)
 
         if name == "recall_user_memory":
@@ -116,6 +121,10 @@ class ToolManager:
                 ensure_ascii=False,
             )
 
+        if name == "list_user_orders" and context is not None:
+            from app.agent.tools.user_orders import list_user_orders
+            return json.dumps(list_user_orders(tenant_id=context.tenant_id,user_id=context.user_id),ensure_ascii=False)
+
         if name == "apply_refund":
             return local_execute_tool(name, arguments, context, config=self.config)
 
@@ -138,7 +147,7 @@ class ToolManager:
             self._mcp_client.close()
             self._mcp_client = None
 
-    def audit_tool_decision(self, name: str, arguments: dict, context, decision: str) -> None:
+    def audit_tool_decision(self, name: str, arguments: dict, context, decision: str, message: str = "") -> None:
         if name != "apply_refund":
             return
         from app.agent.tools.refund import record_refund_decision
@@ -150,7 +159,7 @@ class ToolManager:
             user_id=context.user_id,
             order_id=str(arguments.get("order_id", "")),
             reason=str(arguments.get("reason", "")),
-            decision=decision,
+            decision=decision, message=message,
             approver_ids=settings.refund_approver_ids,
             actor_id=context.approved_by,
         )
@@ -164,5 +173,5 @@ class ToolManager:
             db_path=settings.refund_store, idempotency_key=context.idempotency_key,
             tenant_id=context.tenant_id, user_id=context.user_id,
             order_id=str(arguments.get("order_id", "")), reason=str(arguments.get("reason", "")),
-            timeout_seconds=timeout_seconds,
+            timeout_seconds=timeout_seconds, request_id=context.request_id,
         )
