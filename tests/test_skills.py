@@ -12,6 +12,7 @@
 用法：python3 tests/test_skills.py
 """
 
+import pytest
 import sys
 from pathlib import Path
 
@@ -174,6 +175,7 @@ def test_lazy_loading():
 
 
 # ---------- 测试 7：Agent 集成 ----------
+@pytest.mark.e2e
 def test_agent_integration():
     print("\n[7/7] Agent 集成测试（E2E，需要 API 调用）")
     _clean()

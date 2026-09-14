@@ -168,3 +168,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+import pytest
+pytestmark = pytest.mark.e2e

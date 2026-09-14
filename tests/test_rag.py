@@ -17,6 +17,7 @@
 
 import argparse
 import json
+import pytest
 import sys
 from pathlib import Path
 
@@ -86,6 +87,7 @@ def test_chunker():
 
 
 # ---------- 测试 2：构建/复用索引 ----------
+@pytest.mark.e2e
 def test_build_index(backend_name: str):
     print(f"\n  [2/5] 构建/加载向量索引（backend={backend_name}）")
     embedder = _make_embedder()
@@ -110,6 +112,7 @@ def test_build_index(backend_name: str):
 
 
 # ---------- 测试 3：Top-K 召回 ----------
+@pytest.mark.e2e
 def test_retriever_top_k(backend_name: str):
     print(f"\n  [3/5] KnowledgeRetriever Top-K 召回（backend={backend_name}）")
     embedder = _make_embedder()
@@ -140,6 +143,7 @@ def test_retriever_top_k(backend_name: str):
 
 
 # ---------- 测试 4：search_knowledge 工具结构 ----------
+@pytest.mark.e2e
 def test_tool_shape(backend_name: str):
     print(f"\n  [4/5] search_knowledge 工具返回结构（backend={backend_name}）")
     settings.rag_backend = backend_name
@@ -164,6 +168,7 @@ def test_tool_shape(backend_name: str):
 
 
 # ---------- 测试 5：Agent 端到端 ----------
+@pytest.mark.e2e
 def test_agent_end_to_end(backend_name: str):
     print(f"\n  [5/5] Agent 端到端：政策类问题触发 RAG（backend={backend_name}）")
     settings.rag_backend = backend_name
@@ -241,3 +246,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+@pytest.fixture(params=["numpy", "chroma"])
+def backend_name(request):
+    return request.param

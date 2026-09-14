@@ -202,7 +202,7 @@ def test_responses_token_stream_is_emitted(tmp_path):
         completed = runtime.invoke([{"role": "user", "content": "hello"}], request_id="req-1")
         assert completed["final_text"] == "你好"
         assert [event["delta"] for event in events if event["type"] == "token_delta"] == ["你", "好"]
-        assert events[0] == {"type": "run_started", "request_id": "req-1"}
+        assert events[0] == {"type": "run_started", "request_id": "req-1", "thread_id": runtime.thread_id}
     finally:
         runtime.close()
 

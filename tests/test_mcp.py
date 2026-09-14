@@ -17,6 +17,7 @@
   2. 运行测试: python tests/test_mcp.py
 """
 
+import pytest
 import sys
 from pathlib import Path
 
@@ -58,6 +59,7 @@ def _clean():
 
 
 # ---------- 测试 1：MCP Client 连接与工具发现 ----------
+@pytest.mark.integration
 def test_mcp_connection():
     print("\n[1/7] MCP Client 连接与工具发现")
     client = MCPClient(MCP_URL)
@@ -74,6 +76,7 @@ def test_mcp_connection():
 
 
 # ---------- 测试 2：Schema 转换正确性 ----------
+@pytest.mark.integration
 def test_schema_conversion():
     print("\n[2/7] Schema 转换正确性（MCP → OpenAI 格式）")
     client = MCPClient(MCP_URL)
@@ -98,6 +101,7 @@ def test_schema_conversion():
 
 
 # ---------- 测试 3：通过 MCP 调用单个工具 ----------
+@pytest.mark.integration
 def test_mcp_tool_call():
     print("\n[3/7] 通过 MCP 调用单个工具")
     client = MCPClient(MCP_URL)
@@ -124,13 +128,16 @@ def test_mcp_tool_call():
 
 
 # ---------- 测试 4：ToolManager 统一调度（MCP 模式）----------
+@pytest.mark.integration
 def test_tool_manager_mcp():
     print("\n[4/7] ToolManager 统一调度（MCP 模式）")
-    manager = ToolManager(use_mcp=True, mcp_server_url=MCP_URL)
+    from app.config.settings import Settings
+    manager = ToolManager(use_mcp=True, mcp_server_url=MCP_URL, config=Settings(
+        _env_file=None, mcp_trusted_server_urls=[MCP_URL], mcp_allowed_tools=sorted(EXPECTED_TOOLS)))
     try:
         defs = manager.tool_definitions
-        if len(defs) != 4:
-            _fail(f"期望 4 个工具定义，实际 {len(defs)}")
+        from app.agent.tools.registry import TOOL_DEFINITIONS
+        assert defs == TOOL_DEFINITIONS
         _ok(f"ToolManager 加载了 {len(defs)} 个工具")
 
         import json
@@ -149,9 +156,9 @@ def test_tool_manager_local():
     manager = ToolManager(use_mcp=False)
     try:
         defs = manager.tool_definitions
-        if len(defs) != 4:
-            _fail(f"期望 4 个工具定义，实际 {len(defs)}")
-        _ok("本地模式加载 4 个工具")
+        from app.agent.tools.registry import TOOL_DEFINITIONS
+        assert defs == TOOL_DEFINITIONS
+        _ok(f"本地模式加载 {len(defs)} 个工具")
 
         import json
         result = manager.execute_tool("query_order", {"order_id": "ORD-20240115-001"})
@@ -164,6 +171,7 @@ def test_tool_manager_local():
 
 
 # ---------- 测试 6：完整 Agent + MCP（订单查询）----------
+@pytest.mark.e2e
 def test_agent_mcp_order():
     print("\n[6/7] 完整 Agent + MCP 端到端（订单查询）")
     _clean()
@@ -188,6 +196,7 @@ def test_agent_mcp_order():
 
 
 # ---------- 测试 7：完整 Agent + MCP（商品搜索）----------
+@pytest.mark.e2e
 def test_agent_mcp_product():
     print("\n[7/7] 完整 Agent + MCP 端到端（商品搜索）")
     _clean()

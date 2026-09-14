@@ -13,6 +13,7 @@
 用法：python3 tests/test_evaluation.py
 """
 
+import pytest
 import sys
 from pathlib import Path
 
@@ -253,6 +254,7 @@ def test_evaluator_observability_aggregation():
 
 
 # ---------- 测试 3：沙箱采集 ----------
+@pytest.mark.eval
 def test_sandbox_trace():
     print("\n[5/8] 沙箱采集测试（E2E，需要 API）")
     sandbox = Sandbox(mode="single")
@@ -289,6 +291,7 @@ def test_sandbox_trace():
 
 
 # ---------- 测试 4：沙箱隔离 ----------
+@pytest.mark.eval
 def test_sandbox_isolation():
     print("\n[6/8] 沙箱隔离测试（无需 API）")
     original_memory_enabled = settings.memory_enabled
@@ -328,6 +331,7 @@ def test_sandbox_isolation():
 
 
 # ---------- 测试 5：LLM judge ----------
+@pytest.mark.eval
 def test_judges():
     print("\n[7/8] LLM judge 测试（需要 API）")
     client = _client()
@@ -367,6 +371,7 @@ def test_judges():
 
 
 # ---------- 测试 6：Evaluator 双层 ----------
+@pytest.mark.eval
 def test_evaluator_two_tier():
     print("\n[8/8] Evaluator 双层评分测试（E2E，需要 API）")
     cases = [

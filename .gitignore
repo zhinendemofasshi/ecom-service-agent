@@ -30,3 +30,7 @@ env/
 
 # 会话持久化文件
 app/sessions/
+
+# Deployment secrets
+deploy/runtime.env
+deploy/*.env

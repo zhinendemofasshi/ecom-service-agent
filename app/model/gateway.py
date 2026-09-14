@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from contextlib import contextmanager
+from app.observability import span, record_response
 
 
 def convert_messages(messages):
@@ -34,13 +36,21 @@ class ModelGateway:
         return request
 
     def create(self, **request):
-        response = self.client.responses.create(**self.options(request))
-        if getattr(response, 'status', None) in {'failed', 'incomplete', 'cancelled'}:
-            raise RuntimeError('模型未返回完整结果')
-        return response
+        with span("responses.create", "llm", metadata={
+            "ls_provider": "openai", "ls_model_name": request.get("model", ""),
+        }) as trace:
+            response = self.client.responses.create(**self.options(request))
+            record_response(trace, response)
+            return response
 
+    @contextmanager
     def stream(self, **request):
-        return self.client.responses.stream(**self.options(request))
+        with span("responses.stream", "llm", metadata={
+            "ls_provider": "openai", "ls_model_name": request.get("model", ""),
+        }) as trace:
+            with self.client.responses.stream(**self.options(request)) as stream:
+                yield stream
+                record_response(trace, stream.get_final_response())
 
     def text(self, *, model, messages, temperature=0, max_output_tokens=2048):
         from app.agent.guardrails import redact

@@ -11,9 +11,11 @@ import json
 import re
 import time
 from hashlib import sha256
+from uuid import uuid4
 from typing import Any, Callable, TypedDict
 
 from app.model import ModelGateway
+from app.observability import span, node_span, identifier, graph_tracing_disabled, current_trace_ids
 from app.agent.guardrails import Guardrails, redact
 from app.agent.context import compact, from_response_items, migrate_messages, token_upper_bound
 from langgraph.graph import END, START, StateGraph
@@ -106,7 +108,28 @@ def serialized_checkpoint(method):
     @wraps(method)
     def run(self, *args, **kwargs):
         with self.checkpoint_store.thread_guard(self.thread_id):
-            return method(self, *args, **kwargs)
+            if method.__name__ not in {"invoke", "resume", "cancel_pending"}:
+                return method(self, *args, **kwargs)
+            if method.__name__ == "invoke":
+                request_id = kwargs.get("request_id", args[1] if len(args) > 1 else "")
+                if not request_id:
+                    request_id = str(uuid4())
+                    if len(args) > 1:
+                        args = (args[0], request_id, *args[2:])
+                    else:
+                        kwargs["request_id"] = request_id
+            else:
+                request_id = self.graph.get_state(self.config).values.get("execution_context", {}).get("request_id", "")
+            with span("agent." + method.__name__, config=getattr(self.tool_manager, "config", None),
+                      metadata={"thread_id": self.thread_id, "request_id": identifier(request_id),
+                                "business_run_id": identifier(request_id)}) as trace:
+                if method.__name__ == "resume":
+                    requested = self.graph.get_state(self.config).values.get("approval_requested_at", 0)
+                    if requested:
+                        trace.metadata["approval_wait_seconds"] = max(0, time.time() - requested)
+                result = method(self, *args, **kwargs)
+                trace.outputs["pending_approval"] = bool(isinstance(result, dict) and result.get("__interrupt__"))
+                return result
     return run
 
 
@@ -179,14 +202,14 @@ class LangGraphAgentRuntime:
 
     def _build_graph(self):
         builder = StateGraph(AgentGraphState)
-        builder.add_node("input_guard", self._input_guard)
-        builder.add_node("context", self._context)
-        builder.add_node("router", self._route)
-        builder.add_node("model", self._call_model)
+        builder.add_node("input_guard", node_span("input_guard", self._input_guard))
+        builder.add_node("context", node_span("context", self._context))
+        builder.add_node("router", node_span("router", self._route))
+        builder.add_node("model", node_span("model", self._call_model))
         for route in ("presale", "postsale", "complaint"):
-            builder.add_node(route, lambda state, key=route: self._specialist(state, key))
-        builder.add_node("tools", self._execute_tools)
-        builder.add_node("finalize", self._finalize)
+            builder.add_node(route, node_span(route, lambda state, key=route: self._specialist(state, key)))
+        builder.add_node("tools", node_span("tools", self._execute_tools))
+        builder.add_node("finalize", node_span("finalize", self._finalize))
         builder.add_edge(START, "input_guard")
         builder.add_conditional_edges("input_guard", lambda s: "finalize" if s.get("handoff") else "context")
         builder.add_conditional_edges("context", lambda s: "finalize" if s.get("handoff") else ("router" if self.multi_agent else "model"))
@@ -374,7 +397,8 @@ class LangGraphAgentRuntime:
 
     def _invoke_graph(self, value):
         try:
-            return self.graph.invoke(value, config=self.config)
+            with graph_tracing_disabled():
+                return self.graph.invoke(value, config={**self.config, "recursion_limit": max(25, self.max_steps * 3 + 10)})
         except RunCancelled:
             raise
         except Exception:
@@ -667,7 +691,7 @@ class LangGraphAgentRuntime:
 
     def _emit(self, event: dict) -> None:
         if self.event_sink:
-            self.event_sink(event)
+            self.event_sink({**current_trace_ids(), "thread_id": self.thread_id, **event})
 
     def _raise_if_cancelled(self) -> None:
         if self._cancel_check():

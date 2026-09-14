@@ -315,3 +315,8 @@ ecom-service-agent/
 | 第 9 期 | Agent 评估体系（沙箱重跑测试集 + 过程/结果双层指标 + LLM judge） | v10-evaluation | 2026-06-06 |
 
 > 每期更新后，这里会同步更新架构图和更新日志。
+
+## 测试与生产部署
+
+默认 `python -m pytest -q` 是完全离线门禁；在线测试使用显式 `--suite`。
+LangSmith、工具白名单、Docker、CI 和回滚说明见 [运维指南](docs/operations.md)。

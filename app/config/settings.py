@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings
 
 
@@ -45,8 +46,15 @@ class Settings(BaseSettings):
     # ReAct 循环
     max_react_steps: int = 5
 
+    langsmith_tracing: bool = False
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
+    langsmith_api_key: str = ""
+    langsmith_project: str = "ecom-development"
+
     # MCP 配置
     mcp_enabled: bool = False
+    mcp_trusted_server_urls: list[str] = []
+    mcp_allowed_tools: list[str] = []
     mcp_server_url: str = "http://127.0.0.1:9123/mcp"
 
     # RAG 配置（第5期）
@@ -107,7 +115,7 @@ class Settings(BaseSettings):
     def refund_store(self) -> str:
         return self.state_database_url or self.refund_db_path
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": os.environ.get("ECOM_ENV_FILE", ".env") or None}
 
 
 settings = Settings()

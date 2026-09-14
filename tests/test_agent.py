@@ -143,3 +143,6 @@ if __name__ == "__main__":
     else:
         print("存在失败的测试，请检查。")
         sys.exit(1)
+
+import pytest
+pytestmark = pytest.mark.e2e

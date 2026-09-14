@@ -342,3 +342,6 @@ def test_p1_complaint_handoff_queue(postgres_url):
         assert response.json()["response"]["requires_human"]
         items = client.get(f"/sessions/{sid}/handoffs", headers=headers()).json()["items"]
         assert len(items) == 1 and items[0]["status"] == "open"
+
+import pytest
+pytestmark = pytest.mark.integration

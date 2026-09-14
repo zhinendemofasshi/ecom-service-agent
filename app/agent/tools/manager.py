@@ -29,7 +29,11 @@ class ToolManager:
         self._memory_manager = None
         self._skill_manager = None
 
-        if use_mcp and mcp_server_url:
+        if use_mcp:
+            if mcp_server_url not in self.config.mcp_trusted_server_urls:
+                raise ValueError("MCP server must be explicitly trusted")
+            if not self.config.mcp_allowed_tools:
+                raise ValueError("MCP requires an explicit tool allowlist")
             self._init_mcp(mcp_server_url)
         else:
             self._init_local()
@@ -49,7 +53,8 @@ class ToolManager:
 
         try:
             self._mcp_client = MCPClient(server_url)
-            mcp_tools = self._mcp_client.connect()
+            mcp_tools = [td for td in self._mcp_client.connect()
+                         if td["function"]["name"] in self.config.mcp_allowed_tools]
             print(f"🔗 [MCP] 已连接 {server_url}，发现 {len(mcp_tools)} 个工具")
 
             mcp_names = set()
@@ -89,6 +94,8 @@ class ToolManager:
 
     def execute_tool(self, name: str, arguments: dict, context=None) -> str:
         """根据工具来源分发调用。"""
+        if name not in self._tool_source:
+            return json.dumps({"success": False, "error_code": "policy_denied", "error": "工具不在白名单中"}, ensure_ascii=False)
         if context is not None:
             from app.agent.guardrails import Guardrails
             error=Guardrails().tool_policy(name, arguments, self.tool_definitions,context.tenant_id,context.user_id)

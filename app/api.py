@@ -247,6 +247,8 @@ def create_app(
             if manager.tasks:
                 await asyncio.gather(*manager.tasks, return_exceptions=True)
             manager.close()
+            from app.observability import flush
+            await asyncio.to_thread(flush)
 
     app = FastAPI(title="Ecom Service Agent API", version="1.0.0", lifespan=lifespan)
     app.state.session_manager = manager

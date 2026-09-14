@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from app.agent.tools.execution import READ_ONLY_TOOLS
+from app.observability import span, identifier
 
 
 _SHARED_TOOL_SLOTS = threading.BoundedSemaphore(32)
@@ -49,6 +50,23 @@ class ReliableToolExecutor:
         self._circuits: dict[str, tuple[int, float]] = {}
 
     def execute(self, name: str, arguments: dict, context: ToolExecutionContext) -> str:
+        with span("tool.execute", "tool", metadata={
+            "tool_name": name if name in {d["function"]["name"] for d in getattr(self.tool_manager, "tool_definitions", [])} else "unregistered",
+            "request_id": identifier(context.request_id),
+            "call_id": identifier(context.idempotency_key),
+        }) as trace:
+            result = self._execute(name, arguments, context)
+            try:
+                payload = json.loads(result)
+                success = isinstance(payload, dict) and payload.get("success") is True
+            except (ValueError, TypeError):
+                success = False
+            trace.outputs["success"] = success
+            if not success:
+                trace.error = "ToolBusinessError"
+            return result
+
+    def _execute(self, name: str, arguments: dict, context: ToolExecutionContext) -> str:
         input_size = len(json.dumps(arguments, ensure_ascii=False).encode("utf-8"))
         if input_size > self.policy.max_input_bytes:
             return self._error("tool_input_too_large", "工具输入超过大小限制")
@@ -69,7 +87,8 @@ class ReliableToolExecutor:
             future.add_done_callback(lambda _: _SHARED_TOOL_SLOTS.release())
             retryable = False
             try:
-                result = future.result(timeout=self.policy.timeout_seconds)
+                with span("tool.attempt", "tool", metadata={"attempt": attempt}):
+                    result = future.result(timeout=self.policy.timeout_seconds)
                 if len(result.encode("utf-8")) > self.policy.max_output_bytes:
                     return self._error("tool_output_too_large", "工具输出超过大小限制")
                 if self._is_transient_failure(result):
