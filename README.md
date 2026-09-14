@@ -1,8 +1,6 @@
-# Ecom-Service-Agent: 从0到1实战企业级电商客服Agent系统
+# Ecom-Service-Agent: 电商客服Agent系统
 
 ## 快速开始（Quick Start）
-
-跑起来只需要一个 OpenAI API Key，5 分钟即可看到「小夕」上线对话。
 
 ```bash
 # 1. 进入项目并创建虚拟环境（Python 3.11+）
