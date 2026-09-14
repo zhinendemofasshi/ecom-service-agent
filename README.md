@@ -1,18 +1,5 @@
 # Ecom-Service-Agent: 从0到1实战企业级电商客服Agent系统
 
-## 求职辅导
-
-我目前也在做 **AI 方向的求职辅导**，服务内容包括：
-
-- 简历精修（针对 AI / Agent 岗位优化）
-- 项目包装（这是最核心的，根据你过往的工作/实习和项目经历，定制化包装成agent项目，尽量多地融入agent主流技术，以及给你一份面试时口述的逐字稿）
-- 模拟面试（结合你的项目经历和大厂常问的问题进行深挖）
-- 全程陪跑（从投递到拿 offer）
-
-有需要的同学可以添加我的微信：**HuaiNan54321**，备注「求职辅导」。
-
----
-
 ## 快速开始（Quick Start）
 
 跑起来只需要一个 OpenAI API Key，5 分钟即可看到「小夕」上线对话。
@@ -47,12 +34,12 @@ python main.py
 
 每条回复底部会显示 `[意图 | 置信度 | 是否转人工]`。对话中还支持这些命令：
 
-| 命令 | 作用 |
-|------|------|
-| `skills` | 查看已加载的技能模块 |
-| `memory` | 查看短期 / 长期记忆 |
-| `reset` | 清空当前会话 |
-| `quit` / `exit` | 退出 |
+| 命令            | 作用                 |
+| --------------- | -------------------- |
+| `skills`        | 查看已加载的技能模块 |
+| `memory`        | 查看短期 / 长期记忆  |
+| `reset`         | 清空当前会话         |
+| `quit` / `exit` | 退出                 |
 
 **开启进阶能力**（可选，改 `.env` 后重启即可）：
 
@@ -78,17 +65,17 @@ uvicorn app.api:app --host 0.0.0.0 --port 8000 --workers 2
 
 主要接口：
 
-| 接口 | 用途 |
-|------|------|
-| `POST /sessions` | 创建隔离 session |
-| `POST /sessions/{id}/messages` | 发消息并启动 Agent run |
-| `GET /sessions/{id}/events?after=0` | SSE 读取 token、工具和审批事件；`after` 支持断线续传 |
-| `POST /sessions/{id}/approval` | `approve` / `edit` / `reject` 敏感操作 |
-| `POST /runs/{request_id}/approve`、`POST /runs/{request_id}/reject` | 按 run 审批；重复或过时审批返回 409 |
-| `POST /runs/{request_id}/cancel` | 取消待审批操作不调用模型；执行中的 run 在下一个检查点停止 |
-| `GET /runs/{request_id}` | 查询运行、审批等待、完成、失败或取消状态 |
-| `POST /admin/checkpoints/cleanup` | 清理超过保留期且已完成的 checkpoint |
-| `GET /health`、`GET /ready` | 存活和依赖就绪检查 |
+| 接口                                                                | 用途                                                      |
+| ------------------------------------------------------------------- | --------------------------------------------------------- |
+| `POST /sessions`                                                    | 创建隔离 session                                          |
+| `POST /sessions/{id}/messages`                                      | 发消息并启动 Agent run                                    |
+| `GET /sessions/{id}/events?after=0`                                 | SSE 读取 token、工具和审批事件；`after` 支持断线续传      |
+| `POST /sessions/{id}/approval`                                      | `approve` / `edit` / `reject` 敏感操作                    |
+| `POST /runs/{request_id}/approve`、`POST /runs/{request_id}/reject` | 按 run 审批；重复或过时审批返回 409                       |
+| `POST /runs/{request_id}/cancel`                                    | 取消待审批操作不调用模型；执行中的 run 在下一个检查点停止 |
+| `GET /runs/{request_id}`                                            | 查询运行、审批等待、完成、失败或取消状态                  |
+| `POST /admin/checkpoints/cleanup`                                   | 清理超过保留期且已完成的 checkpoint                       |
+| `GET /health`、`GET /ready`                                         | 存活和依赖就绪检查                                        |
 
 PostgreSQL 模式使用统一共享存储和数据库执行锁。迁移旧数据、生命周期清理和集成测试说明见 [PostgreSQL 运行与迁移](docs/postgres.md)：
 
@@ -128,64 +115,6 @@ GPT-4o mini 与 GPT-5.6 Luna 的同集模型选型实验见
 覆盖全部 19 个知识 Chunk 的 30 条 RAG 专项评估结果（Recall@3/5
 98.3%/100%、MRR 0.95、Faithfulness 100%）见
 [`docs/evaluation-results/2026-08-15/rag-evaluation.md`](docs/evaluation-results/2026-08-15/rag-evaluation.md)。
-
----
-
-## 背景
-
-大家好，我是淮南，Top 985科班出身，有多家大厂后端 & AI Agent 研发经验。
-
-我在小红书上运营着一个 **AI Agent 面经系列**，分享了我面试字节、阿里、MiniMax 等多家公司 AI Agent 岗位的真实面经，目前已经积累了 5000+ 粉丝。在和大家交流的过程中，我发现很多同学对 Agent 相关技术很感兴趣，但苦于没有一个**完整的、可跟着动手的实战项目**。
-
-所以我决定做这件事 —— **以电商客服为场景，从0到1带大家实战一个企业级 Agent 系统**。
-
-### 为什么选电商客服？
-
-电商客服是 Agent 最经典的落地场景之一：业务逻辑清晰（查订单、退换货、推荐商品、售后处理），大家容易理解，面试中也经常被问到。做完这个项目，你不仅能掌握 Agent 核心技术栈，还能直接写进简历。
-
-### 更新方式
-
-我会在小红书上**每期更新一个 Agent 相关技术**，对应本仓库的一个 commit / tag。特别复杂的技术点会拆成 2 期。你可以跟着每期笔记，checkout 到对应的 tag，一步一步跟着做。
-
-**扫码关注我的小红书，获取每期更新通知：**
-
-<p align="center">
-  <img src="./淮南-小红书.jpg" alt="淮南-小红书" width="300" />
-</p>
-
-### 技术演进路线（更新预告）
-
-本项目会按照由浅入深的节奏，逐步叠加 Agent 相关技术：
-
-**基础篇**
-- 纯 Prompt 实现客服对话
-- 结构化输出（Structured Output）
-- 多轮对话管理
-
-**进阶篇**
-- ReAct 范式的 Agent（思考-行动交替，最经典的 Agent 范式）
-- 工具调用 / Function Calling（查订单、查库存等）
-- MCP（Model Context Protocol）集成
-- RAG 检索增强生成（接入商品库、FAQ、退换货政策等）
-
-**高级篇**
-- Multi-Agent 协作（客服路由、售前售后分流）
-- Memory：短期记忆 & 长期记忆
-- Skill：可复用的能力模块（退货处理、订单跟踪等标准化流程）✅
-- Agent 评估体系 ✅
-
-**生产篇**
-- Guardrails 安全护栏（Prompt Injection 检测、输出幻觉校验、敏感信息过滤、意图越界拦截）
-- Human-in-the-Loop 人机协作（置信度评估与自动转人工、Agent↔真人客服交接协议、上下文传递）
-- Agent Observability 可观测性（调用链 Trace、Token/延迟指标采集、工具成功率看板、异常告警）
-
-> 以上为初步规划，实际更新可能会根据大家的反馈进行调整。
-
----
-
-## 项目架构 & 更新历史
-
-> 这是本项目最核心的部分，会随着每一期的更新持续完善。
 
 ### 当前架构
 
@@ -298,22 +227,6 @@ ecom-service-agent/
     ├── test_skills.py             # Skill 可复用能力模块
     └── test_evaluation.py         # Agent 评估体系（沙箱 + 双层测评）
 ```
-
-### 更新日志
-
-| 期数 | 主题 | Tag | 日期 |
-|------|------|-----|------|
-| 第 1 期 | 项目框架 + 纯 Prompt 客服 + 结构化输出 | v1-prompt-and-structured-output | 2025-04-14 |
-| 第 2 期 | 多轮对话管理：Summary 压缩 + JSON 持久化 | v2-conversation-management | 2026-04-18 |
-| 第 3 期 | ReAct Agent + 工具调用 (Function Calling) | v3-react-and-function-calling | 2026-04-27 |
-| 第 4 期 | MCP 集成 (Streamable HTTP) | v4-mcp-integration | 2026-05-01 |
-| 第 5 期 | RAG 检索增强生成（FAQ + 政策知识库） | v5-rag | 2026-05-13 |
-| 第 6 期 | Multi-Agent 协作（客服路由 + 售前/售后/投诉分流） | v7-multi-agent | 2026-05-17 |
-| 第 7 期 | Memory：短期记忆 & 长期记忆 | v8-memory | 2026-05-23 |
-| 第 8 期 | Skill：可复用能力模块（基于 Agent Skills 开放标准） | v9-skills | 2026-05-31 |
-| 第 9 期 | Agent 评估体系（沙箱重跑测试集 + 过程/结果双层指标 + LLM judge） | v10-evaluation | 2026-06-06 |
-
-> 每期更新后，这里会同步更新架构图和更新日志。
 
 ## 测试与生产部署
 

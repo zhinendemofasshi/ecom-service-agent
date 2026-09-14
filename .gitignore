@@ -16,6 +16,7 @@ build/
 # IDE
 .vscode/
 .idea/
+.github
 *.swp
 *.swo
 
@@ -34,3 +35,5 @@ app/sessions/
 # Deployment secrets
 deploy/runtime.env
 deploy/*.env
+
+docs
