@@ -80,7 +80,7 @@ PostgreSQL API 启动时、以及每个清理周期执行维护，也保留 `POS
 ```bash
 CHECKPOINT_BACKEND=sqlite TEST_DATABASE_URL=postgresql:///ecom_service_agent \
 .venv/bin/python -m pytest tests/test_api.py tests/test_production_runtime.py \
-  tests/test_langgraph_runtime.py tests/test_tool_execution.py \
+  tests/test_langgraph_runtime.py \
   tests/test_product_search.py tests/test_rag_evaluation.py tests/test_postgres.py -q
 ```
 

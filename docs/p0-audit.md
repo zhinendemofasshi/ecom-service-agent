@@ -21,7 +21,7 @@
 离线回归命令：
 
 ```bash
-.venv/bin/python -m pytest tests/test_api.py tests/test_production_runtime.py tests/test_langgraph_runtime.py tests/test_tool_execution.py tests/test_product_search.py tests/test_rag_evaluation.py -q
+.venv/bin/python -m pytest tests/test_api.py tests/test_production_runtime.py tests/test_langgraph_runtime.py tests/test_product_search.py tests/test_rag_evaluation.py -q
 ```
 
 覆盖 API 身份不可伪造/过期、run 审批权限与重复请求、取消、SSE 重启回放与 Last-Event-ID、过期游标、客户端自动重连、POST 断线后台执行、真实 Graph 到退款服务的批准/取消、直接调用服务绕过审批、审批过期、并发幂等提交、工具超时及容量、读写重试差异、永久错误不重试、checkpoint 所有权/清理。

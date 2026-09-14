@@ -288,7 +288,6 @@ ecom-service-agent/
 │   └── server.py                  # FastMCP + Streamable HTTP，暴露电商工具
 │
 └── tests/                         # 全部测试
-    ├── test_agent.py              # 结构化输出 + 多轮 + reset
     ├── test_conversation_management.py  # 多轮对话管理
     ├── test_react_agent.py        # ReAct Agent + Function Calling
     ├── test_mcp.py                # MCP 集成

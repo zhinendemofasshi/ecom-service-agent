@@ -4,6 +4,7 @@ import time
 from types import SimpleNamespace
 
 from app.agent.checkpointing import CheckpointStore
+from app.agent.tools.execution import tool_cache_key
 from app.agent.tools.executor import ReliableToolExecutor, ToolExecutionContext, ToolPolicy
 from app.agent.tools.refund import apply_refund, register_refund_approval
 import pytest
@@ -27,6 +28,17 @@ from app.agent.tools.manager import ToolManager
 
 def context(key="idem-1"):
     return ToolExecutionContext("tenant-a", "user-xiaoming", "req-1", key, "reviewer-1")
+
+
+def test_read_only_tool_cache_key_is_stable():
+    first = tool_cache_key("query_order", {"order_id": "ORD-1", "verbose": True})
+    second = tool_cache_key("query_order", {"verbose": True, "order_id": "ORD-1"})
+
+    assert first == second
+
+
+def test_write_tool_is_never_cacheable():
+    assert tool_cache_key("apply_refund", {"order_id": "ORD-1"}) is None
 
 
 def test_refund_requires_owner_and_is_idempotent(tmp_path):
