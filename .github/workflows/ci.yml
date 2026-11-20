@@ -1,0 +1,33 @@
+name: Offline tests and container
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+      - run: ECOM_RUNTIME_ENV=deploy/runtime.env.example docker compose --env-file /dev/null config --quiet
+      - run: docker build -t ecom-service-agent:${{ github.sha }} .
+      - name: Container lifecycle smoke test
+        run: python deploy/smoke.py ecom-service-agent:${{ github.sha }}
+      - name: Compose gateway smoke test
+        run: python deploy/compose_smoke.py ecom-service-agent:${{ github.sha }}
+      - name: Save versioned image
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: docker save ecom-service-agent:${{ github.sha }} | gzip > image.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        with:
+          name: image-${{ github.sha }}
+          path: image.tar.gz
+          retention-days: 7
