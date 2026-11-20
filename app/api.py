@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hmac
 import json
+import secrets
 import sqlite3
 import threading
 import time
@@ -17,7 +18,8 @@ from typing import Callable, Iterator, Literal
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from openai import OpenAI
 
@@ -39,6 +41,10 @@ class ApprovalDecision(BaseModel):
     type: Literal["approve","edit","reject"]
     arguments: dict | None = None
     message: str | None = Field(default=None,max_length=2000)
+
+
+class DemoLoginRequest(BaseModel):
+    role: Literal["customer", "approver"] = "customer"
 
 
 class ApprovalRequest(BaseModel):
@@ -270,6 +276,9 @@ def create_app(
         token = authorization.removeprefix("Bearer ") if authorization.startswith("Bearer ") else ""
         principal = next((value for key, value in config.auth_tokens.items()
                           if token and hmac.compare_digest(token, key)), None)
+        if principal is None and token:
+            # Tokens issued by /auth/demo-login are stored hashed in the registry.
+            principal = manager.registry.lookup_token(token)
         if principal:
             if not all(principal.get(k) for k in ("tenant_id", "user_id", "actor_id")):
                 raise HTTPException(status_code=503, detail="身份配置不完整")
@@ -328,6 +337,47 @@ def create_app(
             raise HTTPException(status_code=503, detail="数据库依赖不可用") from exc
         return {"status": "ready", "checkpoint_backend": config.checkpoint_backend}
 
+    def describe(identity: Identity) -> dict:
+        return {"tenant_id": identity.tenant_id, "user_id": identity.user_id,
+                "actor_id": identity.actor_id, "is_admin": identity.is_admin,
+                "can_approve": identity.can_approve and identity.actor_id in config.refund_approver_ids}
+
+    @app.get("/auth/config")
+    def auth_config() -> dict:
+        return {"demo_login": config.demo_login_enabled,
+                "demo_approver_ready": config.demo_approver_id in config.refund_approver_ids}
+
+    @app.post("/auth/demo-login")
+    def demo_login(body: DemoLoginRequest) -> dict:
+        if not config.demo_login_enabled:
+            raise HTTPException(status_code=404, detail="演示登录未开启")
+        approver = body.role == "approver"
+        if approver and config.demo_approver_id not in config.refund_approver_ids:
+            raise HTTPException(status_code=409,
+                detail=f"请先把 {config.demo_approver_id} 加入 REFUND_APPROVER_IDS")
+        token = secrets.token_urlsafe(32)
+        principal = {"tenant_id": config.demo_tenant_id, "user_id": config.demo_user_id,
+                     "actor_id": config.demo_approver_id if approver else config.demo_user_id,
+                     "roles": ["approver"] if approver else [],
+                     "expires_at": time.time() + config.demo_token_ttl_seconds}
+        manager.registry.issue_token(token, principal)
+        identity = Identity(principal["tenant_id"], principal["user_id"], principal["actor_id"], approver, False)
+        return {"token": token, "expires_at": principal["expires_at"], "identity": describe(identity)}
+
+    @app.post("/auth/logout", status_code=204)
+    def logout(authorization: str = Header("", alias="Authorization")) -> None:
+        if authorization.startswith("Bearer "):
+            manager.registry.revoke_token(authorization.removeprefix("Bearer "))
+
+    @app.get("/me")
+    def me(identity: Identity = Depends(authenticate)) -> dict:
+        return describe(identity)
+
+    @app.get("/sessions")
+    def list_sessions(identity: Identity = Depends(authenticate),
+                      limit: int = Query(50, ge=1, le=200)) -> dict:
+        return {"items": manager.registry.list_sessions(identity.tenant_id, identity.user_id, limit)}
+
     @app.post("/sessions", status_code=201)
     def create_session(identity: Identity = Depends(authenticate)) -> dict:
         return {"session_id": manager.create(identity)}
@@ -341,6 +391,7 @@ def create_app(
     ) -> dict:
         managed = manager.get(session_id, identity)
         request_id = x_request_id or str(uuid4())
+        manager.registry.set_title_once(session_id, " ".join(body.text.split())[:40])
         if not manager.run_slots.acquire(blocking=False):
             raise HTTPException(status_code=429, detail="并发 Agent run 已达到上限")
         try:
@@ -420,7 +471,10 @@ def create_app(
         managed=manager.get(session_id,identity)
         with manager.execution(session_id,identity,managed):
             state=managed.agent.graph_runtime.graph.get_state(managed.agent.graph_runtime.config).values
-            return {'messages':state.get('conversation',[]),'summary':state.get('summary'),
+            with manager.registry.lock:
+                cursor=manager.registry.connection.execute(
+                    'SELECT COALESCE(MAX(sequence),0) FROM api_events WHERE session_id=?',(session_id,)).fetchone()[0]
+            return {'messages':state.get('conversation',[]),'summary':state.get('summary'),'event_cursor':int(cursor),
                     'response':state.get('structured_response'),'message_schema_version':state.get('message_schema_version',1)}
 
     @app.get("/sessions/{session_id}/events")
@@ -602,6 +656,23 @@ def create_app(
             if owns_store:
                 store.close()
         return {"deleted_threads": deleted}
+
+    dist = Path(config.console_dist_dir)
+    if (dist / "index.html").is_file():
+        # Built React console (frontend/). Hashed assets are immutable; every
+        # other /console/* path falls back to index.html for client routing.
+        app.mount("/console/assets", StaticFiles(directory=dist / "assets"), name="console-assets")
+
+        @app.get("/", include_in_schema=False)
+        def root():
+            return RedirectResponse("/console/")
+
+        @app.get("/console/{path:path}", include_in_schema=False)
+        def console(path: str):
+            target = (dist / path).resolve()
+            if path and target.is_file() and dist.resolve() in target.parents:
+                return FileResponse(target)
+            return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
 
     return app
 

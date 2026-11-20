@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/* Design tokens. Utilities like bg-surface / text-muted / border-line read these
+   variables, so dark mode only redefines the variables. */
+@theme {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: "PingFang SC", "Hiragino Sans GB", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+:root {
+  --canvas: #f4f6f3;
+  --surface: #ffffff;
+  --sunken: #eef2ee;
+  --line: #dce4de;
+  --ink: #19312e;
+  --muted: #65766d;
+  --brand: #175b46;
+  --brand-ink: #ffffff;
+  --brand-soft: #e3efe8;
+  --warn: #9a5b12;
+  --warn-soft: #fff2d7;
+  --danger: #b4321f;
+  --danger-soft: #fde8e4;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #0f1715;
+    --surface: #16211e;
+    --sunken: #1c2a26;
+    --line: #2a3a35;
+    --ink: #e2ece7;
+    --muted: #93a69c;
+    --brand: #4fb68f;
+    --brand-ink: #06140f;
+    --brand-soft: #1d3a30;
+    --warn: #e7b464;
+    --warn-soft: #3a2c14;
+    --danger: #f08a78;
+    --danger-soft: #3d1c17;
+    color-scheme: dark;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Markdown replies from the agent. */
+.prose-reply > * + * {
+  margin-top: 0.6em;
+}
+.prose-reply ul {
+  list-style: disc;
+  padding-left: 1.25em;
+}
+.prose-reply ol {
+  list-style: decimal;
+  padding-left: 1.25em;
+}
+.prose-reply strong {
+  font-weight: 600;
+}
+.prose-reply code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--sunken);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+.prose-reply table {
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+.prose-reply th,
+.prose-reply td {
+  border: 1px solid var(--line);
+  padding: 0.3em 0.6em;
+}
+
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: blink 1s steps(2, start) infinite;
+}
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
