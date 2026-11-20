@@ -1,4 +1,4 @@
-# Ecom-Service-Agent: E-commerce Customer Service Agent
+# Ecom-Service-Agent: Full-Stack E-commerce Customer Service Agent
 
 **English** | [简体中文](README.zh-CN.md)
 
@@ -50,6 +50,36 @@ Each reply ends with `[intent | confidence | escalate to human]`. These commands
 - `RAG_BACKEND=chroma` — use the Chroma vector database instead (requires `pip install chromadb`)
 
 LangGraph checkpoints are written to `app/sessions/langgraph-checkpoints.sqlite` by default, so pending approvals survive a process restart. SQLite is meant for local development; `CHECKPOINT_BACKEND=postgres` switches checkpoints, API/events, refund approvals, sessions and memory storage to PostgreSQL together. With `MULTI_AGENT_ENABLED`, the Router, pre-sales, after-sales and complaint agents all run inside one LangGraph and share checkpoints. For the P1 implementation, approval usage and limits, see the [P1 acceptance notes](docs/p1-audit.md) (Chinese).
+
+### Web Console (React + TypeScript)
+
+`frontend/` is the full-stack web console: a customer chat page and a reviewer approval workspace, built with React 18, TypeScript, Vite, TanStack Query and Tailwind CSS.
+
+```bash
+# Backend: local SQLite mode + demo login (customer / reviewer demo identities)
+CHECKPOINT_BACKEND=sqlite DATABASE_URL= DEMO_LOGIN_ENABLED=true \
+REFUND_APPROVER_IDS='["demo-reviewer"]' uvicorn app.api:app --port 8000
+
+# Frontend dev server (proxies the API to port 8000)
+cd frontend && npm install && npm run dev   # open http://localhost:5173/console/
+```
+
+`npm run build` writes `frontend/dist`, which FastAPI serves at `/console/`; the Docker image does this in a multi-stage build.
+
+| Capability | How |
+| --- | --- |
+| Streaming chat | SSE parsed from `fetch` + `ReadableStream` (`EventSource` can't send an `Authorization` header); token-by-token Markdown rendering |
+| Resumable stream | Reconnects with a `sequence` cursor and de-duplicates; exponential backoff with jitter; resyncs history on 410 |
+| Tool visualisation | Live tool status (including retries) while running; order, logistics timeline, product, knowledge-base and refund cards afterwards |
+| Eventual consistency | When a run ends, the streamed text is swapped for the guardrail-checked reply from the checkpoint in the same render |
+| Human approval | Batch decisions (approve / edit then approve / reject), expiry countdown, 409 conflict handling; when a reviewer approves in another tab, the customer's page receives the result over the event stream |
+| UX details | Stop generation, withdraw a refund request, Enter ignored during IME composition, dark mode, mobile drawer |
+
+New backend endpoints: `GET /auth/config`, `POST /auth/demo-login`, `POST /auth/logout`, `GET /me`, `GET /sessions` (list with titles and pending counts); `GET /sessions/{id}` now also returns `event_cursor`. Demo-login tokens are stored only as SHA-256 hashes, and demo login is off by default.
+
+```bash
+cd frontend && npm test        # Vitest: SSE parsing/reconnect/dedup, run state machine, composer
+```
 
 ### API, SSE and Production Configuration
 
@@ -118,6 +148,7 @@ ecom-service-agent/
 ├── requirements.txt
 ├── .env.example
 │
+├── frontend/                      # React + TS web console (chat page, approval workspace, Vitest)
 ├── app/                           # All main bot code + data
 │   ├── config/
 │   │   └── settings.py            # Config from .env (MCP / RAG / Multi-Agent / Memory / Skill / Evaluation)

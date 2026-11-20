@@ -1,4 +1,4 @@
-# Ecom-Service-Agent: 电商客服Agent系统
+# Ecom-Service-Agent: 电商智能客服全栈系统
 
 [English](README.md) | **简体中文**
 
@@ -50,6 +50,36 @@ python main.py
 - `RAG_BACKEND=chroma` —— 换用 Chroma 向量数据库（需 `pip install chromadb`）
 
 LangGraph checkpoint 默认写入 `app/sessions/langgraph-checkpoints.sqlite`，用于在进程重启后恢复待审核操作。SQLite 适合本地开发；`CHECKPOINT_BACKEND=postgres` 现已统一启用 PostgreSQL checkpoint、API/事件、退款审批、会话及记忆存储。开启 `MULTI_AGENT_ENABLED` 后，Router、售前、售后、投诉均在同一个 LangGraph 中执行并共享 checkpoint。P1 实现、审批用法与边界见 [P1 验收说明](docs/p1-audit.md)。
+
+### Web 控制台（React + TypeScript）
+
+`frontend/` 是配套的全栈前端：顾客对话页 + 审核员审批工作台，基于 React 18、TypeScript、Vite、TanStack Query、Tailwind CSS。
+
+```bash
+# 后端：本地 SQLite 模式 + 演示登录（顾客 / 审核员两个演示身份）
+CHECKPOINT_BACKEND=sqlite DATABASE_URL= DEMO_LOGIN_ENABLED=true \
+REFUND_APPROVER_IDS='["demo-reviewer"]' uvicorn app.api:app --port 8000
+
+# 前端开发服务器（代理 API 到 8000 端口）
+cd frontend && npm install && npm run dev   # 打开 http://localhost:5173/console/
+```
+
+`npm run build` 生成的 `frontend/dist` 会被 FastAPI 直接托管在 `/console/`，Docker 镜像在多阶段构建中自动完成这一步。
+
+| 能力 | 实现要点 |
+| --- | --- |
+| 流式对话 | `fetch` + `ReadableStream` 解析 SSE（`EventSource` 无法携带 `Authorization` 头）；逐字渲染 Markdown |
+| 断线续传 | 按 `sequence` 游标重连与去重，指数退避 + 抖动；410 时重新同步历史 |
+| 工具调用可视化 | 运行中显示实时工具状态（含重试），完成后渲染订单 / 物流时间线 / 商品 / 知识库 / 退款结果卡片 |
+| 最终一致 | 运行结束后以 checkpoint 历史替换流式文本（经过 guardrail 校验的版本），同一帧切换无闪烁 |
+| 人工审批 | 批量决定（批准 / 修改后批准 / 拒绝）、过期倒计时、409 冲突提示；审核员在另一标签页批准后，顾客页通过事件流自动收到结果 |
+| 体验细节 | 停止生成、撤回退款申请、中文输入法组合输入时 Enter 不误发送、深色模式、移动端抽屉 |
+
+新增后端接口：`GET /auth/config`、`POST /auth/demo-login`、`POST /auth/logout`、`GET /me`、`GET /sessions`（会话列表 + 标题 + 待审数量）；`GET /sessions/{id}` 额外返回 `event_cursor`。演示登录签发的令牌在数据库中只保存 SHA-256 哈希，默认关闭。
+
+```bash
+cd frontend && npm test        # Vitest：SSE 解析/重连/去重、运行状态机、输入框
+```
 
 ### API、SSE 与生产配置
 
@@ -124,6 +154,7 @@ ecom-service-agent/
 ├── requirements.txt
 ├── .env.example
 │
+├── frontend/                      # React + TS Web 控制台（对话页、审批工作台、Vitest 单测）
 ├── app/                           # 主 Bot 全部代码 + 数据
 │   ├── config/
 │   │   └── settings.py            # 配置管理（从 .env 读取，含 MCP / RAG / Multi-Agent / Memory / Skill / Evaluation 配置）

@@ -58,7 +58,67 @@ class SessionRegistry:
             CREATE INDEX IF NOT EXISTS api_runs_session_status ON api_runs(session_id, status);
             CREATE INDEX IF NOT EXISTS api_runs_status_updated ON api_runs(status, updated_at);
         """)
+        self.connection.executescript("""
+            CREATE TABLE IF NOT EXISTS api_session_meta (
+                session_id TEXT PRIMARY KEY, title TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS api_tokens (
+                token_hash TEXT PRIMARY KEY, principal_json TEXT NOT NULL,
+                expires_at REAL NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS api_sessions_owner ON api_sessions(tenant_id, user_id, updated_at);
+        """)
         self.connection.commit()
+
+    # --- console helpers -------------------------------------------------
+
+    def set_title_once(self, session_id: str, title: str) -> None:
+        with self.lock:
+            self.connection.execute(
+                "INSERT OR IGNORE INTO api_session_meta(session_id, title) VALUES (?, ?)",
+                (session_id, title),
+            )
+            self.connection.commit()
+
+    def list_sessions(self, tenant_id: str, user_id: str, limit: int = 50) -> list[dict]:
+        with self.lock:
+            rows = self.connection.execute(
+                """SELECT s.session_id, m.title, s.created_at, s.updated_at,
+                    (SELECT COUNT(*) FROM api_runs r WHERE r.session_id = s.session_id AND r.status = 'pending')
+                FROM api_sessions s LEFT JOIN api_session_meta m ON m.session_id = s.session_id
+                WHERE s.tenant_id = ? AND s.user_id = ?
+                ORDER BY s.updated_at DESC LIMIT ?""",
+                (tenant_id, user_id, limit),
+            ).fetchall()
+        return [{"session_id": r[0], "title": r[1] or "新会话", "created_at": r[2],
+                 "updated_at": r[3], "pending_approvals": int(r[4])} for r in rows]
+
+    def issue_token(self, token: str, principal: dict) -> None:
+        from hashlib import sha256
+        with self.lock:
+            self.connection.execute("DELETE FROM api_tokens WHERE expires_at <= ?",
+                                    (datetime.now(UTC).timestamp(),))
+            self.connection.execute(
+                "INSERT INTO api_tokens(token_hash, principal_json, expires_at) VALUES (?, ?, ?)",
+                (sha256(token.encode()).hexdigest(), json.dumps(principal), principal["expires_at"]),
+            )
+            self.connection.commit()
+
+    def lookup_token(self, token: str) -> dict | None:
+        from hashlib import sha256
+        with self.lock:
+            row = self.connection.execute(
+                "SELECT principal_json FROM api_tokens WHERE token_hash = ?",
+                (sha256(token.encode()).hexdigest(),),
+            ).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def revoke_token(self, token: str) -> None:
+        from hashlib import sha256
+        with self.lock:
+            self.connection.execute("DELETE FROM api_tokens WHERE token_hash = ?",
+                                    (sha256(token.encode()).hexdigest(),))
+            self.connection.commit()
 
     def create(self, tenant_id: str, user_id: str, session_path: str) -> str:
         session_id = str(uuid4())

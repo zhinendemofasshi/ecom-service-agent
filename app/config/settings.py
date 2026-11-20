@@ -43,6 +43,15 @@ class Settings(BaseSettings):
     api_session_db_path: str = "app/sessions/api-sessions.sqlite"
     max_concurrent_runs: int = 32
 
+    # Web console (frontend/). Demo login issues short-lived hashed tokens for a
+    # fixed demo identity; keep it off anywhere real customers can reach.
+    demo_login_enabled: bool = False
+    demo_tenant_id: str = "tenant-a"
+    demo_user_id: str = "user-xiaoming"
+    demo_approver_id: str = "demo-reviewer"
+    demo_token_ttl_seconds: int = 8 * 3600
+    console_dist_dir: str = "frontend/dist"
+
     # ReAct 循环
     max_react_steps: int = 5
 
